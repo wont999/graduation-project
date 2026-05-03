@@ -94,7 +94,10 @@ public class ProcedureGatewayService {
                         String message = String.format(ExceptionMessages.KAFKA_SEND_FAILED, payload.requestId(), targetTopic);
                         responseFuture.completeExceptionally(new KafkaSendException(message, ex));
                     } else {
-                        log.debug("Request {} sent successfully to {}", payload.requestId(), targetTopic);
+                        log.debug("Request {} sent successfully to {} (partition: {}, offset: {})", 
+                                payload.requestId(), targetTopic, 
+                                result.getRecordMetadata().partition(), 
+                                result.getRecordMetadata().offset());
                     }
                 });
     }

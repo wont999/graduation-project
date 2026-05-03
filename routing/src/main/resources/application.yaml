@@ -3,7 +3,7 @@ spring:
     name: routing
 
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -21,13 +21,13 @@ spring:
 
 # Server configuration
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 # Eureka Client configuration
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
     # Уменьшаем интервал обновления реестра для более быстрого обнаружения сервисов

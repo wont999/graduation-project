@@ -1,5 +1,6 @@
 package com.example.blockly_executor_service.config;
 
+import com.example.blockly_executor_service.event.ScriptExecutedEvent;
 import com.example.common.model.ProcedurePayload;
 import com.example.common.model.ProcedureResponse;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -54,6 +55,7 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, ProcedurePayload<?>> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(blocklyConsumerFactory());
+        factory.getContainerProperties().setMissingTopicsFatal(false);
         return factory;
     }
 
@@ -83,5 +85,59 @@ public class KafkaConfig {
     @Bean
     public KafkaTemplate<String, ProcedureResponse<?>> kafkaTemplate() {
         return new KafkaTemplate<>(responseProducerFactory());
+    }
+
+
+    /**
+     * ProducerFactory для ScriptExecutedEvent
+     */
+    @Bean
+    public ProducerFactory<String, ScriptExecutedEvent> eventProducerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(ProducerConfig.RETRIES_CONFIG, 3);
+        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        return new DefaultKafkaProducerFactory<>(props);
+    }
+
+    /**
+     * KafkaTemplate для отправки ScriptExecutedEvent
+     */
+    @Bean
+    public KafkaTemplate<String, ScriptExecutedEvent> eventKafkaTemplate() {
+        return new KafkaTemplate<>(eventProducerFactory());
+    }
+
+    /**
+     * ConsumerFactory для чтения ScriptExecutedEvent
+     */
+    @Bean
+    public ConsumerFactory<String, ScriptExecutedEvent> eventConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, ScriptExecutedEvent.class.getName());
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+
+    /**
+     * ListenerContainerFactory для ScriptExecutedEvent
+     */
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ScriptExecutedEvent> eventKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, ScriptExecutedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(eventConsumerFactory());
+        factory.getContainerProperties().setMissingTopicsFatal(false);
+        return factory;
     }
 }
