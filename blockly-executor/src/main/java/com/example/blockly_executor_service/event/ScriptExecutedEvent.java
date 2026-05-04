@@ -1,12 +1,16 @@
 package com.example.blockly_executor_service.event;
 
 import com.example.blockly_executor_service.model.ExecutionResult;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ScriptExecutedEvent {
 

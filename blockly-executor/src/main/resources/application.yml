@@ -15,42 +15,30 @@ spring:
     default-schema: public
     liquibase-schema: public
 
-#  datasource:
-#    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/blockly}
-#    username: ${SPRING_DATASOURCE_USERNAME:blockly}
-#    password: ${SPRING_DATASOURCE_PASSWORD:blocklypwd}
-#    hikari:
-#      connection-timeout: 600000
-#      maximum-pool-size: 1
-#      minimum-idle: 1
-#      max-lifetime: 1800000
-#      idle-timeout: 600000
   datasource:
     write:
-      url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/blockly}
+      jdbc-url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/blockly}
       username: ${SPRING_DATASOURCE_USERNAME:blockly}
       password: ${SPRING_DATASOURCE_PASSWORD:blocklypwd}
       driver-class-name: org.postgresql.Driver
-      hikari:
-        connection-timeout: 600000
-        maximum-pool-size: 1
-        minimum-idle: 1
-        max-lifetime: 1800000
-        idle-timeout: 600000
-        pool-name: WritePool
+      connection-timeout: 600000
+      maximum-pool-size: 1
+      minimum-idle: 1
+      max-lifetime: 1800000
+      idle-timeout: 600000
+      pool-name: WritePool
 
     read:
-      url: ${SPRING_DATASOURCE_READ_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres-replica:5432/blockly}}
+      jdbc-url: ${SPRING_DATASOURCE_READ_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres-replica:5432/blockly}}
       username: ${SPRING_DATASOURCE_READ_USERNAME:${SPRING_DATASOURCE_USERNAME:blockly}}
       password: ${SPRING_DATASOURCE_READ_PASSWORD:${SPRING_DATASOURCE_PASSWORD:blocklypwd}}
       driver-class-name: org.postgresql.Driver
-      hikari:
-        connection-timeout: 600000
-        maximum-pool-size: 1
-        minimum-idle: 1
-        max-lifetime: 1800000
-        idle-timeout: 600000
-        pool-name: ReadPool
+      connection-timeout: 600000
+      maximum-pool-size: 1
+      minimum-idle: 1
+      max-lifetime: 1800000
+      idle-timeout: 600000
+      pool-name: ReadPool
   jpa:
     generate-ddl: false
     hibernate:
