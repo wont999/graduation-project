@@ -1,5 +1,6 @@
-package com.example.blockly_executor_service.model;
+package com.example.blockly_executor_service.model.entity;
 
+import com.example.blockly_executor_service.model.dto.ExecutionResult;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

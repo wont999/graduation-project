@@ -1,6 +1,6 @@
 package com.example.blockly_executor_service.event;
 
-import com.example.blockly_executor_service.model.ExecutionResult;
+import com.example.blockly_executor_service.model.dto.ExecutionResult;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

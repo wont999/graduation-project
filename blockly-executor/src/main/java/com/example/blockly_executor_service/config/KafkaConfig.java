@@ -143,4 +143,5 @@ public class KafkaConfig {
         factory.getContainerProperties().setMissingTopicsFatal(false);
         return factory;
     }
+
 }

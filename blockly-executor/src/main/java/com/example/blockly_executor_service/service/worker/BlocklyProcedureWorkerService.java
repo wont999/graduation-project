@@ -1,4 +1,4 @@
-package com.example.blockly_executor_service.service;
+package com.example.blockly_executor_service.service.worker;
 
 import com.example.common.ProcedureExecutor;
 import com.example.common.exception.ProcedureExecutionException;

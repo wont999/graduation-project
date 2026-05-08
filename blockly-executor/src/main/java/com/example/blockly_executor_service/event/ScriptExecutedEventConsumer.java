@@ -1,6 +1,6 @@
 package com.example.blockly_executor_service.event;
 
-import com.example.blockly_executor_service.model.ScriptExecutionLog;
+import com.example.blockly_executor_service.model.entity.ScriptExecutionLog;
 import com.example.blockly_executor_service.repository.ScriptExecutionLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,11 +1,10 @@
-package com.example.blockly_executor_service.service;
+package com.example.blockly_executor_service.service.execution;
 
 import com.example.blockly_executor_service.dao.CqrsDatabaseAccessor;
 import com.example.blockly_executor_service.event.ScriptExecutedEvent;
 import com.example.blockly_executor_service.event.ScriptExecutedEventPublisher;
-import com.example.blockly_executor_service.model.ExecutionRequest;
-import com.example.blockly_executor_service.model.ExecutionResult;
-import com.example.blockly_executor_service.repository.ScriptExecutionLogRepository;
+import com.example.blockly_executor_service.model.dto.ExecutionRequest;
+import com.example.blockly_executor_service.model.dto.ExecutionResult;
 import com.example.common.exception.ProcedureExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,16 +23,13 @@ import java.util.UUID;
 public class JavaScriptExecutorService implements ScriptExecutionService {
 
     private final ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
-    private final ScriptExecutionLogRepository scriptExecutionLogRepository;
     private final JdbcTemplate writeJdbcTemplate;
     private final JdbcTemplate readJdbcTemplate;
     private final ScriptExecutedEventPublisher eventPublisher;
 
-    public JavaScriptExecutorService(ScriptExecutionLogRepository scriptExecutionLogRepository,
-                                     @Qualifier("writeJdbcTemplate") JdbcTemplate writeJdbcTemplate,
+    public JavaScriptExecutorService(@Qualifier("writeJdbcTemplate") JdbcTemplate writeJdbcTemplate,
                                      @Qualifier("readJdbcTemplate") JdbcTemplate readJdbcTemplate,
                                      ScriptExecutedEventPublisher eventPublisher) {
-        this.scriptExecutionLogRepository = scriptExecutionLogRepository;
         this.writeJdbcTemplate = writeJdbcTemplate;
         this.readJdbcTemplate = readJdbcTemplate;
         this.eventPublisher = eventPublisher;
@@ -64,13 +60,10 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             scriptEngine.getContext().setAttribute("polyglot.js.allowHostClassLookup", false, ScriptContext.ENGINE_SCOPE);
 
             // Создаем DatabaseAccessor для доступа к БД с изоляцией по tenant
-            /*DatabaseAccessor dbAccessor = new DatabaseAccessor(tenantId, jdbcTemplate);
-            scriptEngine.put("DB", dbAccessor);*/
-
             CqrsDatabaseAccessor dbAccessor = new CqrsDatabaseAccessor(
                     tenantId,
-                    writeJdbcTemplate,
-                    readJdbcTemplate
+                    readJdbcTemplate,
+                    writeJdbcTemplate
             );
             scriptEngine.put("DB", dbAccessor);
 

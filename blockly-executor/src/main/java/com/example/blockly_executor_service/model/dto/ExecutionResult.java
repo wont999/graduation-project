@@ -1,4 +1,4 @@
-package com.example.blockly_executor_service.model;
+package com.example.blockly_executor_service.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

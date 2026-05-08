@@ -1,9 +1,9 @@
 package com.example.blockly_executor_service.service.procedure;
 
 
-import com.example.blockly_executor_service.model.ExecutionRequest;
-import com.example.blockly_executor_service.model.ExecutionResult;
-import com.example.blockly_executor_service.service.ScriptExecutionService;
+import com.example.blockly_executor_service.model.dto.ExecutionRequest;
+import com.example.blockly_executor_service.model.dto.ExecutionResult;
+import com.example.blockly_executor_service.service.execution.ScriptExecutionService;
 import com.example.common.ProcedureExecutor;
 import com.example.common.model.ExecutionMetadata;
 import lombok.RequiredArgsConstructor;
