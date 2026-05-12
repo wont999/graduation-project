@@ -31,6 +31,9 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    @Value("${blockly.kafka.concurrency:10}")
+    private int kafkaConcurrency;
+
     /**
      * ConsumerFactory для десериализации ProcedurePayload
      */
@@ -58,6 +61,11 @@ public class KafkaConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(blocklyConsumerFactory());
         factory.getContainerProperties().setMissingTopicsFatal(false);
+
+        if (kafkaConcurrency > 0) {
+            factory.setConcurrency(kafkaConcurrency);
+        }
+
         return factory;
     }
 
@@ -141,6 +149,11 @@ public class KafkaConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(eventConsumerFactory());
         factory.getContainerProperties().setMissingTopicsFatal(false);
+
+        if (kafkaConcurrency > 0) {
+            factory.setConcurrency(Math.max(1, kafkaConcurrency / 2));
+        }
+
         return factory;
     }
 
