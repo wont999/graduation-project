@@ -5,43 +5,85 @@ spring:
     discovery:
       enabled: true
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
 
   liquibase:
-    enabled: true
+    enabled: ${SPRING_LIQUIBASE_ENABLED:true}
     change-log: classpath:db/changelog/db.changelog-master.yaml
     default-schema: public
     liquibase-schema: public
+    url: ${SPRING_LIQUIBASE_URL:jdbc:postgresql://postgres:5432/blockly}
+    user: ${SPRING_DATASOURCE_USER:blockly}
+    password: ${SPRING_DATASOURCE_PASSWORD:blocklypwd}
+
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/blockly
-    username: blockly
-    password: blocklypwd
-    hikari:
-      connection-timeout: 600000
-      maximum-pool-size: 1
-      minimum-idle: 1
-      max-lifetime: 1800000
-      idle-timeout: 600000
+    write:
+      url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://pgbouncer-write:6432/blockly} #PgBouncer
+      username: ${SPRING_DATASOURCE_USERNAME:blockly}
+      password: ${SPRING_DATASOURCE_PASSWORD:blocklypwd}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        connection-timeout: 30000
+        maximum-pool-size: 10
+        minimum-idle: 2
+        max-lifetime: 1800000
+        idle-timeout: 300000
+        pool-name: WritePool
+        connection-test-query: SELECT 1
+        auto-commit: true
+
+    read:
+      url: ${SPRING_DATASOURCE_READ_URL:jdbc:postgresql://pgbouncer-read:6432/blockly} #PgBouncer
+      username: ${SPRING_DATASOURCE_READ_USERNAME:${SPRING_DATASOURCE_USERNAME:blockly}}
+      password: ${SPRING_DATASOURCE_READ_PASSWORD:${SPRING_DATASOURCE_PASSWORD:blocklypwd}}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        connection-timeout: 30000
+        maximum-pool-size: 20
+        minimum-idle: 5
+        max-lifetime: 1800000
+        idle-timeout: 300000
+        pool-name: ReadPool
+        connection-test-query: SELECT 1
+        auto-commit: true
+        read-only: true
+
   jpa:
     generate-ddl: false
     hibernate:
       ddl-auto: none
     open-in-view: false
-
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     fetch-registry: true
     register-with-eureka: true
   instance:
     prefer-ip-address: true
     hostname: localhost
-    instance-id: ${spring.application.name}:${server.port}
+    instance-id: ${spring.application.name}:${random.value}
+
 server:
-  port: 8085
+  port: ${SERVER_PORT:8085}
+
 blockly:
   kafka:
     topic: blockly-executor-procedures
+    concurrency: 10
+
+  # Мониторинг репликации
+  replication:
+    monitoring:
+      enabled: true
+

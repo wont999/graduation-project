@@ -22,12 +22,17 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ADDRESS}/realms/${KEYCLOAK_REALM:master}
+          issuer-uri: ${KEYCLOAK_ADDRESS:http://localhost:8080}/realms/${KEYCLOAK_REALM:master}
+
+server:
+  port: ${SERVER_PORT:8080}
+
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     fetch-registry: true
+    register-with-eureka: true
   instance:
     prefer-ip-address: true
-    hostname: localhost
+    instance-id: ${spring.application.name}:${random.uuid}

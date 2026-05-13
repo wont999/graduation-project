@@ -28,7 +28,7 @@ public class BlocklyProcedureWorkerService {
     final KafkaTemplate<String, ProcedureResponse<?>> responseKafkaTemplate;
     final ProcedureMapper procedureMapper;
 
-    @KafkaListener(topics = "blockly-executor-procedures", groupId = "worker-blockly-executor")
+    @KafkaListener(topics = "blockly-executor-procedures", groupId = "worker-blockly-executor", containerFactory = "blocklyKafkaListenerContainerFactory")
     public void handleBlocklyProcedure(ProcedurePayload<?> request) {
         log.info("Processing BLOCKLY-EXECUTOR procedure: {} (requestId: {})", request.procedureName(), request.requestId());
 
