@@ -23,7 +23,7 @@ public class CqrsTenantAwareDao {
 
     @HostAccess.Export
     public Object findById(Object id) {
-        return readDao.findById(id);
+        return readDao.findById(convertId(id));
     }
 
     @HostAccess.Export
@@ -48,16 +48,49 @@ public class CqrsTenantAwareDao {
 
     @HostAccess.Export
     public Object create(Map<String, Object> data) {
-        return writeDao.create(data);
+        return writeDao.create(convertMap(data));
     }
 
     @HostAccess.Export
     public Object update(Object id, Map<String, Object> data) {
-        return writeDao.update(id, data);
+        return writeDao.update(convertId(id), convertMap(data));
     }
 
     @HostAccess.Export
     public boolean delete(Object id) {
-        return writeDao.delete(id);
+        return writeDao.delete(convertId(id));
+    }
+
+    private Object convertId(Object id) {
+        if (id instanceof org.graalvm.polyglot.Value) {
+            org.graalvm.polyglot.Value v = (org.graalvm.polyglot.Value) id;
+            if (v.fitsInLong()) return v.asLong();
+            if (v.fitsInInt()) return v.asInt();
+            if (v.isString()) return v.asString();
+        }
+        return id;
+    }
+    private Map<String, Object> convertMap(Map<String, Object> data) {
+        if (data == null) return null;
+        java.util.HashMap<String, Object> result = new java.util.HashMap<>();
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            result.put(entry.getKey(), convertValue(entry.getValue()));
+        }
+        return result;
+    }
+    private Object convertValue(Object value) {
+        if (value instanceof org.graalvm.polyglot.Value) {
+            org.graalvm.polyglot.Value v = (org.graalvm.polyglot.Value) value;
+            if (v.isNull()) return null;
+            if (v.isBoolean()) return v.asBoolean();
+            if (v.isString()) return v.asString();
+            if (v.isNumber()) {
+                if (v.fitsInInt()) return v.asInt();
+                if (v.fitsInLong()) return v.asLong();
+                if (v.fitsInDouble()) return v.asDouble();
+                return v.asDouble();
+            }
+        }
+        return value;
     }
 }

@@ -8,6 +8,11 @@ spring:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     consumer:
       auto-offset-reset: earliest
+    admin:
+      auto-create: true
+    properties:
+      num.partitions: 10
+      replication.factor: 1
 
   liquibase:
     enabled: ${SPRING_LIQUIBASE_ENABLED:true}
@@ -30,7 +35,7 @@ spring:
       pool-name: WritePool
 
     read:
-      jdbc-url: ${SPRING_DATASOURCE_READ_URL:jdbc:postgresql://pgbouncer-read:6432/blockly}
+      jdbc-url: ${SPRING_DATASOURCE_READ_URL:jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}?prepareThreshold=0}
       username: ${SPRING_DATASOURCE_READ_USERNAME:${SPRING_DATASOURCE_USERNAME:blockly}}
       password: ${SPRING_DATASOURCE_READ_PASSWORD:${SPRING_DATASOURCE_PASSWORD:blocklypwd}}
       driver-class-name: org.postgresql.Driver

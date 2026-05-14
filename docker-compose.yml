@@ -54,7 +54,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 300s
+      start_period: 60s
     volumes:
       - postgres_replica_data:/var/lib/postgresql/data
     depends_on:
@@ -83,7 +83,7 @@ services:
       DATABASES_DBNAME: blockly
       DATABASES_USER: blockly
       DATABASES_PASSWORD: blocklypwd
-      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_POOL_MODE: session
       PGBOUNCER_MAX_CLIENT_CONN: 100
       PGBOUNCER_DEFAULT_POOL_SIZE: 20
       PGBOUNCER_LISTEN_PORT: 6432
@@ -119,6 +119,7 @@ services:
       PGBOUNCER_SERVER_IDLE_TIMEOUT: 600
       PGBOUNCER_SERVER_LIFETIME: 1800
       PGBOUNCER_IGNORE_STARTUP_PARAMETERS: extra_float_digits
+
     ports:
       - "6433:6432"
     depends_on:
@@ -295,11 +296,12 @@ services:
       context: ./blockly-executor
       dockerfile: Dockerfile
     environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blockly}
       SERVER_PORT: 8085
       SPRING_DATASOURCE_URL: jdbc:postgresql://pgbouncer-write:6432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}
+      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}?prepareThreshold=0&preferQueryMode=simple
       SPRING_DATASOURCE_READ_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_READ_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker-1:19092

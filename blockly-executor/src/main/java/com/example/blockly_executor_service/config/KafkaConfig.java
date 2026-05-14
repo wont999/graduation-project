@@ -3,6 +3,7 @@ package com.example.blockly_executor_service.config;
 import com.example.blockly_executor_service.event.ScriptExecutedEvent;
 import com.example.common.model.ProcedurePayload;
 import com.example.common.model.ProcedureResponse;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -33,6 +35,14 @@ public class KafkaConfig {
 
     @Value("${blockly.kafka.concurrency:10}")
     private int kafkaConcurrency;
+
+    @Bean
+    public NewTopic blocklyExecutorProceduresTopic() {
+        return TopicBuilder.name("blockly-executor-procedures")
+                .partitions(10)
+                .replicas(1)
+                .build();
+    }
 
     /**
      * ConsumerFactory для десериализации ProcedurePayload
