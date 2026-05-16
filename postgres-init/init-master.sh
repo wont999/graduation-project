@@ -4,7 +4,7 @@ set -e
 echo "Configuring PostgreSQL for replication..."
 
 #правило для репликации в pg_hba.conf
-cat >> "${PGDATA}/pg_hba.conf" <<EOF
+cat >> "/var/lib/postgresql/data/pg_hba.conf" <<EOF
 
 # Replication connections
 host    replication     all             0.0.0.0/0               md5

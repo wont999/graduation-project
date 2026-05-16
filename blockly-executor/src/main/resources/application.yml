@@ -65,7 +65,7 @@ server:
 blockly:
   kafka:
     topic: blockly-executor-procedures
-    concurrency: 10 #for 30 partitions(3 ins)
+    concurrency: 10
 
 #logging:
 #  level:
