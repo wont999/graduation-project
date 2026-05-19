@@ -18,6 +18,12 @@ services:
       - "hot_standby=on"
       - "-c"
       - "listen_addresses=*"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=1GB"
     ports:
       - "5433:5432"
     networks:
@@ -65,8 +71,63 @@ services:
         chown -R postgres:postgres /var/lib/postgresql/data
         chmod 700 /var/lib/postgresql/data
         echo 'Base backup completed, starting replica...'
-        exec gosu postgres postgres
-  
+        exec gosu postgres postgres -c max_connections=200 -c shared_buffers=256MB -c effective_cache_size=1GB
+
+  # PgBouncer для записи (мастер)
+  pgbouncer-write:
+    image: pgbouncer/pgbouncer:latest
+    container_name: pgbouncer-write
+    environment:
+      DATABASES_HOST: postgres
+      DATABASES_PORT: 5432
+      DATABASES_DBNAME: blockly
+      DATABASES_USER: blockly
+      DATABASES_PASSWORD: blocklypwd
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_MAX_CLIENT_CONN: 100
+      PGBOUNCER_DEFAULT_POOL_SIZE: 20
+      PGBOUNCER_LISTEN_PORT: 6432
+      PGBOUNCER_AUTH_TYPE: any
+      PGBOUNCER_SERVER_IDLE_TIMEOUT: 600
+      PGBOUNCER_SERVER_LIFETIME: 1800
+      PGBOUNCER_IGNORE_STARTUP_PARAMETERS: extra_float_digits
+    ports:
+      - "6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+
+  # PgBouncer для чтения (реплика)
+  pgbouncer-read:
+    image: pgbouncer/pgbouncer:latest
+    container_name: pgbouncer-read
+    environment:
+      DATABASES_HOST: postgres-replica
+      DATABASES_PORT: 5432
+      DATABASES_DBNAME: blockly
+      DATABASES_USER: blockly
+      DATABASES_PASSWORD: blocklypwd
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_MAX_CLIENT_CONN: 100
+      PGBOUNCER_DEFAULT_POOL_SIZE: 20
+      PGBOUNCER_LISTEN_PORT: 6432
+      PGBOUNCER_AUTH_TYPE: any
+      PGBOUNCER_SERVER_IDLE_TIMEOUT: 600
+      PGBOUNCER_SERVER_LIFETIME: 1800
+      PGBOUNCER_IGNORE_STARTUP_PARAMETERS: extra_float_digits
+    ports:
+      - "6433:6432"
+    depends_on:
+      postgres-replica:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
 
   # Keycloak
   keycloak:
@@ -235,10 +296,10 @@ services:
       dockerfile: Dockerfile
     environment:
       SERVER_PORT: 8085
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://pgbouncer-write:6432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://postgres-replica:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}
       SPRING_DATASOURCE_READ_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_READ_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker-1:19092
@@ -253,6 +314,10 @@ services:
         condition: service_healthy
       discovery:
         condition: service_healthy
+      pgbouncer-write:
+        condition: service_started
+      pgbouncer-read:
+        condition: service_started
     networks:
       - app-network
     restart: unless-stopped

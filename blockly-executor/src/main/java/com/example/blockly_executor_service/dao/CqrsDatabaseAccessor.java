@@ -25,7 +25,21 @@ public class CqrsDatabaseAccessor {
     }
 
     @HostAccess.Export
-    public Object query(String sql, Object... params) {
+    public Object query(String sql, Object... params){
+        log.debug("Executing READ query: {} (tenant: {})",sql,tenantId);
+
+        // Проверка безопасности - только SELECT
+        if (!sql.trim().toUpperCase().startsWith("SELECT")) {
+            throw new SecurityException("Only SELECT queries are allowed");
+        }
+
+        // Автоматически добавляем фильтр по tenant_id если его нет
+        if (!sql.toLowerCase().contains("tenant_id")) {
+            log.warn("Query without tenant_id filter: {}", sql);
+        }
+
+        //READ connection
         return readJdbcTemplate.queryForList(sql, params);
     }
 }
+

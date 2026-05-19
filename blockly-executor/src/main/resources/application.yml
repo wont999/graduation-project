@@ -17,28 +17,31 @@ spring:
 
   datasource:
     write:
-      jdbc-url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/blockly}
+      jdbc-url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://pgbouncer-write:6432/blockly?prepareThreshold=0}
       username: ${SPRING_DATASOURCE_USERNAME:blockly}
       password: ${SPRING_DATASOURCE_PASSWORD:blocklypwd}
       driver-class-name: org.postgresql.Driver
-      connection-timeout: 600000
-      maximum-pool-size: 1
-      minimum-idle: 1
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 2
+      auto-commit: true
       max-lifetime: 1800000
       idle-timeout: 600000
       pool-name: WritePool
 
     read:
-      jdbc-url: ${SPRING_DATASOURCE_READ_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres-replica:5432/blockly}}
+      jdbc-url: ${SPRING_DATASOURCE_READ_URL:jdbc:postgresql://pgbouncer-read:6432/blockly}
       username: ${SPRING_DATASOURCE_READ_USERNAME:${SPRING_DATASOURCE_USERNAME:blockly}}
       password: ${SPRING_DATASOURCE_READ_PASSWORD:${SPRING_DATASOURCE_PASSWORD:blocklypwd}}
       driver-class-name: org.postgresql.Driver
-      connection-timeout: 600000
-      maximum-pool-size: 1
-      minimum-idle: 1
+      connection-timeout: 30000
+      maximum-pool-size: 20
+      minimum-idle: 5
+      auto-commit: true
       max-lifetime: 1800000
       idle-timeout: 600000
       pool-name: ReadPool
+
   jpa:
     generate-ddl: false
     hibernate:
@@ -62,3 +65,9 @@ server:
 blockly:
   kafka:
     topic: blockly-executor-procedures
+    concurrency: 10 #for 30 partitions(3 ins)
+
+#logging:
+#  level:
+#    org.apache.kafka.clients.admin: DEBUG
+#    org.springframework.kafka: DEBUG
