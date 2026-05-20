@@ -69,7 +69,7 @@ export function setup() {
   const res = http.post(KEYCLOAK_URL, {
     grant_type: 'password',
     client_id: 'gateway-client',
-    client_secret: 'kkfLeiH1MHQjQVnmUDR9Hzr161tfoIso',
+    client_secret: 'sUTYSTdef4d9h8STvcbAJkbwtIClrLe7',
     username: 'testuser',
     password: 'testpass',
   }, {
@@ -107,7 +107,7 @@ export default function (data) {
   const productId = data.products[__VU % data.products.length] || 1;
 
   if (rand < 0.7) {
-    executeScript(`DB.table('products').findAll()`, data.token);
+    executeScript(`DB.table('products').findAll().slice(0, 50)`, data.token);
   } else if (rand < 0.85) {
     const price = Math.floor(Math.random() * 1000) + 1;
     executeScript(`DB.table('products').create({name: 'vu-${__VU}-${__ITER}', price: ${price}})`, data.token);

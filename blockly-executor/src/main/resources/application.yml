@@ -35,7 +35,7 @@ spring:
       password: ${SPRING_DATASOURCE_READ_PASSWORD:${SPRING_DATASOURCE_PASSWORD:blocklypwd}}
       driver-class-name: org.postgresql.Driver
       connection-timeout: 30000
-      maximum-pool-size: 20
+      maximum-pool-size: 10
       minimum-idle: 5
       auto-commit: true
       max-lifetime: 1800000
@@ -66,6 +66,27 @@ blockly:
   kafka:
     topic: blockly-executor-procedures
     concurrency: 10
+
+#Метрики
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: blockly-executor
+    distribution:
+      slo:
+        blockly_dao_read: 1ms,5ms,10ms,50ms,100ms,500ms,1s,2s,5s,10s,15s,20s,30s
+        blockly_dao_write: 1ms,5ms,10ms,50ms,100ms,500ms,1s,2s,5s,10s,15s,20s,30s
+
 
 #logging:
 #  level:

@@ -6,6 +6,7 @@ import com.example.blockly_executor_service.event.ScriptExecutedEventPublisher;
 import com.example.blockly_executor_service.model.dto.ExecutionRequest;
 import com.example.blockly_executor_service.model.dto.ExecutionResult;
 import com.example.common.exception.ProcedureExecutionException;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,13 +27,16 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
     private final JdbcTemplate writeJdbcTemplate;
     private final JdbcTemplate readJdbcTemplate;
     private final ScriptExecutedEventPublisher eventPublisher;
+    private final MeterRegistry meterRegistry;
 
     public JavaScriptExecutorService(@Qualifier("writeJdbcTemplate") JdbcTemplate writeJdbcTemplate,
                                      @Qualifier("readJdbcTemplate") JdbcTemplate readJdbcTemplate,
-                                     ScriptExecutedEventPublisher eventPublisher) {
+                                     ScriptExecutedEventPublisher eventPublisher,
+                                     MeterRegistry meterRegistry) {
         this.writeJdbcTemplate = writeJdbcTemplate;
         this.readJdbcTemplate = readJdbcTemplate;
         this.eventPublisher = eventPublisher;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
@@ -63,7 +67,8 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             CqrsDatabaseAccessor dbAccessor = new CqrsDatabaseAccessor(
                     tenantId,
                     readJdbcTemplate,
-                    writeJdbcTemplate
+                    writeJdbcTemplate,
+                    meterRegistry
             );
             scriptEngine.put("DB", dbAccessor);
 

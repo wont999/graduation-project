@@ -87,7 +87,7 @@ services:
       DATABASES_PASSWORD: blocklypwd
       PGBOUNCER_POOL_MODE: transaction
       PGBOUNCER_MAX_CLIENT_CONN: 100
-      PGBOUNCER_DEFAULT_POOL_SIZE: 20
+      PGBOUNCER_DEFAULT_POOL_SIZE: 30
       PGBOUNCER_LISTEN_PORT: 6432
       PGBOUNCER_AUTH_TYPE: any
       PGBOUNCER_SERVER_IDLE_TIMEOUT: 600
@@ -115,7 +115,7 @@ services:
       DATABASES_PASSWORD: blocklypwd
       PGBOUNCER_POOL_MODE: transaction
       PGBOUNCER_MAX_CLIENT_CONN: 100
-      PGBOUNCER_DEFAULT_POOL_SIZE: 20
+      PGBOUNCER_DEFAULT_POOL_SIZE: 30
       PGBOUNCER_LISTEN_PORT: 6432
       PGBOUNCER_AUTH_TYPE: any
       PGBOUNCER_SERVER_IDLE_TIMEOUT: 600
@@ -398,6 +398,8 @@ services:
         condition: service_started
       pgbouncer-read:
         condition: service_started
+      prometheus:
+        condition: service_started
     networks:
       - app-network
     restart: unless-stopped
@@ -434,6 +436,8 @@ services:
       pgbouncer-write:
         condition: service_started
       pgbouncer-read:
+        condition: service_started
+      prometheus:
         condition: service_started
     networks:
       - app-network
@@ -472,9 +476,38 @@ services:
         condition: service_started
       pgbouncer-read:
         condition: service_started
+      prometheus:
+        condition: service_started
     networks:
       - app-network
     restart: unless-stopped
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
 
 networks:
   app-network:
@@ -484,3 +517,4 @@ volumes:
   keycloak_data:
   postgres_data:
   postgres_replica_data:
+  grafana_data:

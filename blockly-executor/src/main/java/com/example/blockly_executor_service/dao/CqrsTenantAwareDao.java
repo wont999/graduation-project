@@ -1,5 +1,6 @@
 package com.example.blockly_executor_service.dao;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,9 +16,10 @@ public class CqrsTenantAwareDao {
 
     public CqrsTenantAwareDao(String tenantId, String tableName,
                               JdbcTemplate readJdbcTemplate,
-                              JdbcTemplate writeJdbcTemplate) {
-        this.readDao = new CqrsTenantAwareReadDao(tenantId, tableName, readJdbcTemplate);
-        this.writeDao = new CqrsTenantAwareWriteDao(tenantId, tableName, writeJdbcTemplate);
+                              JdbcTemplate writeJdbcTemplate,
+                              MeterRegistry meterRegistry) {
+        this.readDao = new CqrsTenantAwareReadDao(tenantId, tableName, readJdbcTemplate, meterRegistry);
+        this.writeDao = new CqrsTenantAwareWriteDao(tenantId, tableName, writeJdbcTemplate, meterRegistry);
         log.debug("Created CQRS DAO for table: {} (tenant: {})", tableName, tenantId);
     }
 

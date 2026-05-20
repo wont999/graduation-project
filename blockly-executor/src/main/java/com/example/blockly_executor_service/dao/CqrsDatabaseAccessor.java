@@ -1,5 +1,6 @@
 package com.example.blockly_executor_service.dao;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.HostAccess;
@@ -15,12 +16,13 @@ public class CqrsDatabaseAccessor {
     private final JdbcTemplate readJdbcTemplate;
     private final JdbcTemplate writeJdbcTemplate;
     private final ConcurrentHashMap<String, CqrsTenantAwareDao> daoCache = new ConcurrentHashMap<>();
+    private final MeterRegistry meterRegistry;
 
     @HostAccess.Export
     public CqrsTenantAwareDao table(String tableName) {
         return daoCache.computeIfAbsent(tableName, name -> {
             log.debug("Creating CQRS DAO for table: {} (tenant: {})", name, tenantId);
-            return new CqrsTenantAwareDao(tenantId, name, readJdbcTemplate, writeJdbcTemplate);
+            return new CqrsTenantAwareDao(tenantId, name, readJdbcTemplate, writeJdbcTemplate, meterRegistry);
         });
     }
 
