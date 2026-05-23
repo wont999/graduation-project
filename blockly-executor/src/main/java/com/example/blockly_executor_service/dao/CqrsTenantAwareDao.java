@@ -34,6 +34,16 @@ public class CqrsTenantAwareDao {
     }
 
     @HostAccess.Export
+    public List<Map<String, Object>> findAll(int limit) {
+        return readDao.findAll(limit);
+    }
+
+    @HostAccess.Export
+    public List<Map<String, Object>> findRecent(int count) {
+        return readDao.findRecent(count);
+    }
+
+    @HostAccess.Export
     public List<Map<String, Object>> where(Map<String, Object> conditions) {
         return readDao.where(conditions);
     }

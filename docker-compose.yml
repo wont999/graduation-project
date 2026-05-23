@@ -114,8 +114,9 @@ services:
       DATABASES_USER: blockly
       DATABASES_PASSWORD: blocklypwd
       PGBOUNCER_POOL_MODE: transaction
-      PGBOUNCER_MAX_CLIENT_CONN: 100
-      PGBOUNCER_DEFAULT_POOL_SIZE: 30
+      PGBOUNCER_MAX_CLIENT_CONN: 250
+      PGBOUNCER_DEFAULT_POOL_SIZE: 60
+      PGBOUNCER_QUERY_WAIT_TIMEOUT: 300
       PGBOUNCER_LISTEN_PORT: 6432
       PGBOUNCER_AUTH_TYPE: any
       PGBOUNCER_SERVER_IDLE_TIMEOUT: 600
@@ -224,7 +225,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_NUM_PARTITIONS: 10
+      KAFKA_NUM_PARTITIONS: 30
     depends_on:
       - controller-1
       - controller-2
@@ -258,7 +259,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_NUM_PARTITIONS: 10
+      KAFKA_NUM_PARTITIONS: 30
     depends_on:
       - controller-1
       - controller-2
@@ -292,7 +293,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_NUM_PARTITIONS: 10
+      KAFKA_NUM_PARTITIONS: 30
     depends_on:
       - controller-1
       - controller-2
@@ -375,12 +376,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://pgbouncer-write:6432/${POSTGRES_DB}?prepareThreshold=0
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}
+      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}?prepareThreshold=0
       SPRING_DATASOURCE_READ_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_READ_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_LIQUIBASE_ENABLED: true
+      SPRING_PROFILES_ACTIVE: test
     depends_on:
       postgres:
         condition: service_healthy
@@ -404,6 +406,7 @@ services:
       - app-network
     restart: unless-stopped
 
+
   blockly-executor-2:
     build:
       context: ./blockly-executor
@@ -414,12 +417,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://pgbouncer-write:6432/${POSTGRES_DB}?prepareThreshold=0
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}
+      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}?prepareThreshold=0
       SPRING_DATASOURCE_READ_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_READ_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_LIQUIBASE_ENABLED: true
+      SPRING_PROFILES_ACTIVE: test
     depends_on:
       postgres:
         condition: service_healthy
@@ -453,12 +457,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://pgbouncer-write:6432/${POSTGRES_DB}?prepareThreshold=0
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}
+      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}?prepareThreshold=0
       SPRING_DATASOURCE_READ_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_READ_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_LIQUIBASE_ENABLED: true
+      SPRING_PROFILES_ACTIVE: test
     depends_on:
       postgres:
         condition: service_healthy
@@ -503,6 +508,8 @@ services:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
     networks:
       - app-network
     restart: unless-stopped

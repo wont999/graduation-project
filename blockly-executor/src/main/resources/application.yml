@@ -8,6 +8,13 @@ spring:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     consumer:
       auto-offset-reset: earliest
+      properties:
+        metric.reporters: io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
+        metrics.sample.window.ms: 30000
+    producer:
+      properties:
+        metric.reporters: io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
+        metrics.sample.window.ms: 30000
 
   liquibase:
     enabled: ${SPRING_LIQUIBASE_ENABLED:true}
@@ -30,12 +37,12 @@ spring:
       pool-name: WritePool
 
     read:
-      jdbc-url: ${SPRING_DATASOURCE_READ_URL:jdbc:postgresql://pgbouncer-read:6432/blockly}
+      jdbc-url: ${SPRING_DATASOURCE_READ_URL:jdbc:postgresql://pgbouncer-read:6432/blockly?prepareThreshold=0}
       username: ${SPRING_DATASOURCE_READ_USERNAME:${SPRING_DATASOURCE_USERNAME:blockly}}
       password: ${SPRING_DATASOURCE_READ_PASSWORD:${SPRING_DATASOURCE_PASSWORD:blocklypwd}}
       driver-class-name: org.postgresql.Driver
-      connection-timeout: 30000
-      maximum-pool-size: 10
+      connection-timeout: 60000
+      maximum-pool-size: 30
       minimum-idle: 5
       auto-commit: true
       max-lifetime: 1800000
@@ -62,10 +69,11 @@ eureka:
 
 server:
   port: ${SERVER_PORT:8085}
+
 blockly:
   kafka:
     topic: blockly-executor-procedures
-    concurrency: 10
+    concurrency: 20
 
 #Метрики
 management:
@@ -83,6 +91,10 @@ management:
     tags:
       application: blockly-executor
     distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
       slo:
         blockly_dao_read: 1ms,5ms,10ms,50ms,100ms,500ms,1s,2s,5s,10s,15s,20s,30s
         blockly_dao_write: 1ms,5ms,10ms,50ms,100ms,500ms,1s,2s,5s,10s,15s,20s,30s

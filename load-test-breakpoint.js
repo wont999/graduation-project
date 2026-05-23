@@ -12,7 +12,7 @@ export const options = {
         { duration: '20s', target: 100 },     // разогрев
         { duration: '40s', target: 300 },     // 300 VU
         { duration: '40s', target: 500 },     // 500 VU
-        { duration: '40s', target: 800 },     // 800 VU - ищем предел
+        { duration: '40s', target: 1500 },     // 1500 VU - ищем предел
         { duration: '20s', target: 0 },       // сброс
     ],
     thresholds: {
@@ -39,7 +39,7 @@ function executeScript(script, token) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    timeout: '60s',
+    timeout: '120s',
   });
   const duration = Date.now() - start;
 
@@ -107,7 +107,7 @@ export default function (data) {
   const productId = data.products[__VU % data.products.length] || 1;
 
   if (rand < 0.7) {
-    executeScript(`DB.table('products').findAll().slice(0, 50)`, data.token);
+    executeScript(`DB.table('products').findAll()`, data.token);
   } else if (rand < 0.85) {
     const price = Math.floor(Math.random() * 1000) + 1;
     executeScript(`DB.table('products').create({name: 'vu-${__VU}-${__ITER}', price: ${price}})`, data.token);
