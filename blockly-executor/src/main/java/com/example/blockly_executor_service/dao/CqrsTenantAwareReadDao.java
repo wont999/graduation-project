@@ -7,6 +7,7 @@ import org.graalvm.polyglot.HostAccess;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -21,28 +22,44 @@ public class CqrsTenantAwareReadDao {
     private final String tableName;
     private final JdbcTemplate readJdbcTemplate;
     private final MeterRegistry meterRegistry;
+    private final String fullyQualifiedTableName;
 
+    private final Map<String, Timer> timerCache = new HashMap<>();
+    private final String findByIdSql;
+    private final String findAllSql;
+    private final String findRecentSql;
+    private final String countSql;
 
-    public CqrsTenantAwareReadDao(String tenantId, String tableName, JdbcTemplate readJdbcTemplate, MeterRegistry meterRegistry) {
+    public CqrsTenantAwareReadDao(String tenantId, String tableName, String fullyQualifiedTableName, JdbcTemplate readJdbcTemplate, MeterRegistry meterRegistry) {
         this.tenantId = tenantId;
         this.tableName = tableName;
+        this.fullyQualifiedTableName = fullyQualifiedTableName;
         this.readJdbcTemplate = readJdbcTemplate;
         this.meterRegistry = meterRegistry;
+
+        this.findByIdSql = String.format("SELECT * FROM %s WHERE id = ?", fullyQualifiedTableName);
+        this.findAllSql = String.format("SELECT * FROM %s ORDER BY id LIMIT ?", fullyQualifiedTableName);
+        this.findRecentSql = String.format("SELECT * FROM %s ORDER BY id DESC LIMIT ?", fullyQualifiedTableName);
+        this.countSql = String.format("SELECT COUNT(*) FROM %s", fullyQualifiedTableName);
+
         log.debug("Created READ DAO for table: {} with tenantId: {}", tableName, tenantId);
+    }
+
+    private Timer getTimer(String operation) {
+        return timerCache.computeIfAbsent(operation, op ->
+                Timer.builder("blockly_dao_read")
+                        .tag("operation", op)
+                        .tag("table", tableName)
+                        .tag("tenant", tenantId)
+                        .publishPercentileHistogram()
+                        .register(meterRegistry)
+        );
     }
 
     @HostAccess.Export
     public Object findById(Object id) {
-        Timer timer = Timer.builder("blockly_dao_read")
-                .tag("operation", "findById")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
-            String sql = String.format("SELECT * FROM %s WHERE id = ?", fullyQualifiedTableName());
-            log.debug("QUERY - findById from table: {}", fullyQualifiedTableName());
-            List<Map<String, Object>> results = readJdbcTemplate.queryForList(sql, id);
+        return getTimer("findById").record(() -> {
+            List<Map<String, Object>> results = readJdbcTemplate.queryForList(findByIdSql, id);
             return results.isEmpty() ? null : results.get(0);
         });
     }
@@ -54,52 +71,24 @@ public class CqrsTenantAwareReadDao {
 
     @HostAccess.Export
     public List<Map<String, Object>> findAll(int limit) {
-        Timer timer = Timer.builder("blockly_dao_read")
-                .tag("operation", "findAll")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
-            String sql = String.format("SELECT * FROM %s ORDER BY id LIMIT ?", fullyQualifiedTableName());
-            log.debug("QUERY - findAll({}) from table: {}", limit, fullyQualifiedTableName());
-            return readJdbcTemplate.queryForList(sql, limit);
-        });
+        return getTimer("findAll").record(() -> readJdbcTemplate.queryForList(findAllSql, limit));
     }
 
     @HostAccess.Export
     public List<Map<String, Object>> findRecent(int count) {
-        Timer timer = Timer.builder("blockly_dao_read")
-                .tag("operation", "findRecent")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
-            String sql = String.format("SELECT * FROM %s ORDER BY id DESC LIMIT ?", fullyQualifiedTableName());
-            log.debug("QUERY - findRecent({}) from table: {}", count, fullyQualifiedTableName());
-            return readJdbcTemplate.queryForList(sql, count);
-        });
+        return getTimer("findRecent").record(() -> readJdbcTemplate.queryForList(findRecentSql, count));
     }
 
     @HostAccess.Export
     public List<Map<String, Object>> where(Map<String, Object> conditions) {
-        Timer timer = Timer.builder("blockly_dao_read")
-                .tag("operation", "where")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
+        return getTimer("where").record(() -> {
             if (conditions == null || conditions.isEmpty()) {
                 return findAll();
             }
 
-            log.debug("QUERY - where from table: {}", fullyQualifiedTableName());
-
             StringBuilder sql = new StringBuilder(String.format(
                     "SELECT * FROM %s WHERE 1=1",
-                    fullyQualifiedTableName()
+                    fullyQualifiedTableName
             ));
 
             List<Object> params = new ArrayList<>();
@@ -120,13 +109,7 @@ public class CqrsTenantAwareReadDao {
 
     @HostAccess.Export
     public Object findOne(Map<String, Object> conditions) {
-        Timer timer = Timer.builder("blockly_dao_read")
-                .tag("operation", "findOne")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
+        return getTimer("findOne").record(() -> {
             List<Map<String, Object>> results = where(conditions);
             return results.isEmpty() ? null : results.get(0);
         });
@@ -134,17 +117,9 @@ public class CqrsTenantAwareReadDao {
 
     @HostAccess.Export
     public Long count() {
-        Timer timer = Timer.builder("blockly_dao_read")
-                .tag("operation", "count")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
-            String sql = String.format("SELECT COUNT(*) FROM %s", fullyQualifiedTableName());
-            log.debug("QUERY - count from table: {}", fullyQualifiedTableName());
-            return readJdbcTemplate.queryForObject(sql, Long.class);
-        });
+        return getTimer("count").record(() ->
+                readJdbcTemplate.queryForObject(countSql, Long.class)
+        );
     }
 
     @HostAccess.Export
@@ -159,7 +134,4 @@ public class CqrsTenantAwareReadDao {
         return readJdbcTemplate.queryForList(sql, params);
     }
 
-    private String fullyQualifiedTableName() {
-        return "tenant_" + tenantId + "." + tableName;
-    }
 }

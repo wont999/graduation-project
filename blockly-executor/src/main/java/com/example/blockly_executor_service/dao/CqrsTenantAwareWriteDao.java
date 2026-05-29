@@ -7,6 +7,7 @@ import org.graalvm.polyglot.HostAccess;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -22,26 +23,34 @@ public class CqrsTenantAwareWriteDao {
     private final String tableName;
     private final JdbcTemplate writeJdbcTemplate;
     private final MeterRegistry meterRegistry;
+    private final String fullyQualifiedTableName;
 
-    public CqrsTenantAwareWriteDao(String tenantId, String tableName, JdbcTemplate writeJdbcTemplate, MeterRegistry meterRegistry) {
+    private final Map<String, Timer> timerCache = new HashMap<>();
+
+
+    public CqrsTenantAwareWriteDao(String tenantId, String tableName, String fullyQualifiedTableName, JdbcTemplate writeJdbcTemplate, MeterRegistry meterRegistry) {
         this.tenantId = tenantId;
         this.tableName = tableName;
+        this.fullyQualifiedTableName = fullyQualifiedTableName;
         this.writeJdbcTemplate = writeJdbcTemplate;
         this.meterRegistry = meterRegistry;
         log.debug("Created WRITE DAO for table: {} with tenantId: {}", tableName, tenantId);
     }
 
+    private Timer getTimer(String operation) {
+        return timerCache.computeIfAbsent(operation, op ->
+                Timer.builder("blockly_dao_write")
+                        .tag("operation", op)
+                        .tag("table", tableName)
+                        .tag("tenant", tenantId)
+                        .publishPercentileHistogram()
+                        .register(meterRegistry)
+        );
+    }
+
     @HostAccess.Export
     public Object create(Map<String, Object> data) {
-        Timer timer = Timer.builder("blockly_dao_write")
-                .tag("operation", "create")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
-            log.debug("COMMAND - create in table: {}", fullyQualifiedTableName());
-
+        return getTimer("create").record(() -> {
             data.remove("id");
             data.remove("created_at");
             data.remove("updated_at");
@@ -58,7 +67,7 @@ public class CqrsTenantAwareWriteDao {
 
             String sql = String.format(
                     "INSERT INTO %s (%s) VALUES (%s) RETURNING *",
-                    fullyQualifiedTableName(), columnsSql, valuesSql
+                    fullyQualifiedTableName, columnsSql, valuesSql
             );
 
             Object[] values = columns.stream().map(data::get).toArray();
@@ -70,21 +79,13 @@ public class CqrsTenantAwareWriteDao {
 
     @HostAccess.Export
     public Object update(Object id, Map<String, Object> data) {
-        Timer timer = Timer.builder("blockly_dao_write")
-                .tag("operation", "update")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
-            log.debug("COMMAND - update in table: {}", fullyQualifiedTableName());
-
+        return getTimer("update").record(() -> {
             data.remove("id");
             data.remove("created_at");
             data.remove("updated_at");
 
             if (data.isEmpty()) {
-                String sql = String.format("SELECT * FROM %s WHERE id = ?", fullyQualifiedTableName());
+                String sql = String.format("SELECT * FROM %s WHERE id = ?", fullyQualifiedTableName);
                 List<Map<String, Object>> results = writeJdbcTemplate.queryForList(sql, id);
                 return results.isEmpty() ? null : results.get(0);
             }
@@ -108,7 +109,7 @@ public class CqrsTenantAwareWriteDao {
 
             String sql = String.format(
                     "UPDATE %s SET %s WHERE id = ? RETURNING *",
-                    fullyQualifiedTableName(),
+                    fullyQualifiedTableName,
                     String.join(", ", setClauses)
             );
 
@@ -119,22 +120,10 @@ public class CqrsTenantAwareWriteDao {
 
     @HostAccess.Export
     public boolean delete(Object id) {
-        Timer timer = Timer.builder("blockly_dao_write")
-                .tag("operation", "delete")
-                .tag("table", tableName)
-                .tag("tenant", tenantId)
-                .publishPercentileHistogram()
-                .register(meterRegistry);
-        return timer.record(() -> {
-            log.debug("COMMAND - delete from table: {}", fullyQualifiedTableName());
-
-            String sql = String.format("DELETE FROM %s WHERE id = ?", fullyQualifiedTableName());
+        return getTimer("delete").record(() -> {
+            String sql = String.format("DELETE FROM %s WHERE id = ?", fullyQualifiedTableName);
             int deleteCount = writeJdbcTemplate.update(sql, id);
             return deleteCount > 0;
         });
-    }
-
-    private String fullyQualifiedTableName() {
-        return "tenant_" + tenantId + "." + tableName;
     }
 }

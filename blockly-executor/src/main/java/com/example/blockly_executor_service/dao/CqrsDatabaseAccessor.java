@@ -15,20 +15,18 @@ public class CqrsDatabaseAccessor {
     private final String tenantId;
     private final JdbcTemplate readJdbcTemplate;
     private final JdbcTemplate writeJdbcTemplate;
-    private final ConcurrentHashMap<String, CqrsTenantAwareDao> daoCache = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
 
     @HostAccess.Export
     public CqrsTenantAwareDao table(String tableName) {
-        return daoCache.computeIfAbsent(tableName, name -> {
-            log.debug("Creating CQRS DAO for table: {} (tenant: {})", name, tenantId);
-            return new CqrsTenantAwareDao(tenantId, name, readJdbcTemplate, writeJdbcTemplate, meterRegistry);
-        });
+
+        log.debug("Creating CQRS DAO for table: {} (tenant: {})", tableName, tenantId);
+        return new CqrsTenantAwareDao(tenantId, tableName, readJdbcTemplate, writeJdbcTemplate, meterRegistry);
     }
 
     @HostAccess.Export
-    public Object query(String sql, Object... params){
-        log.debug("Executing READ query: {} (tenant: {})",sql,tenantId);
+    public Object query(String sql, Object... params) {
+        log.debug("Executing READ query: {} (tenant: {})", sql, tenantId);
 
         // Проверка безопасности - только SELECT
         if (!sql.trim().toUpperCase().startsWith("SELECT")) {

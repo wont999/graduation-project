@@ -29,6 +29,10 @@ services:
       - "shared_buffers=256MB"
       - "-c"
       - "effective_cache_size=1GB"
+      - "-c"
+      - "synchronous_commit=off"
+      - "-c"
+      - "commit_delay=100000"
     ports:
       - "5433:5432"
     networks:
@@ -383,6 +387,12 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_LIQUIBASE_ENABLED: true
       SPRING_PROFILES_ACTIVE: test
+      JAVA_TOOL_OPTIONS: "-Xmx1536m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+      SPRING_KAFKA_LISTENER_MAX_POLL_RECORDS: 10
+      BLOCKLY_KAFKA_CONCURRENCY: 6
+      BLOCKLY_GRAAL_POOL_SIZE: 6
+      SPRING_KAFKA_LISTENER_MAX_POLL_INTERVAL_MS: "300000"
+      SPRING_KAFKA_CONSUMER_FETCH_MAX_WAIT_MS: 500
     depends_on:
       postgres:
         condition: service_healthy
@@ -404,6 +414,8 @@ services:
         condition: service_started
     networks:
       - app-network
+    ports:
+      - "8090:8086"
     restart: unless-stopped
 
 
@@ -424,6 +436,12 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
       SPRING_LIQUIBASE_ENABLED: true
       SPRING_PROFILES_ACTIVE: test
+      JAVA_TOOL_OPTIONS: "-Xmx1536m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+      SPRING_KAFKA_LISTENER_MAX_POLL_RECORDS: 10
+      BLOCKLY_KAFKA_CONCURRENCY: 6
+      BLOCKLY_GRAAL_POOL_SIZE: 6
+      SPRING_KAFKA_LISTENER_MAX_POLL_INTERVAL_MS: "300000"
+      SPRING_KAFKA_CONSUMER_FETCH_MAX_WAIT_MS: 500
     depends_on:
       postgres:
         condition: service_healthy
@@ -445,47 +463,53 @@ services:
         condition: service_started
     networks:
       - app-network
+    ports:
+      - "8091:8086"
     restart: unless-stopped
 
-  blockly-executor-3:
-    build:
-      context: ./blockly-executor
-      dockerfile: Dockerfile
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-blockly}
-      SERVER_PORT: 8085
-      SPRING_DATASOURCE_URL: jdbc:postgresql://pgbouncer-write:6432/${POSTGRES_DB}?prepareThreshold=0
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}?prepareThreshold=0
-      SPRING_DATASOURCE_READ_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_READ_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
-      SPRING_LIQUIBASE_ENABLED: true
-      SPRING_PROFILES_ACTIVE: test
-    depends_on:
-      postgres:
-        condition: service_healthy
-      postgres-replica:
-        condition: service_healthy
-      broker-1:
-        condition: service_healthy
-      broker-2:
-        condition: service_healthy
-      broker-3:
-        condition: service_healthy
-      discovery:
-        condition: service_healthy
-      pgbouncer-write:
-        condition: service_started
-      pgbouncer-read:
-        condition: service_started
-      prometheus:
-        condition: service_started
-    networks:
-      - app-network
-    restart: unless-stopped
+#  blockly-executor-3:
+#    build:
+#      context: ./blockly-executor
+#      dockerfile: Dockerfile
+#    environment:
+#      POSTGRES_DB: ${POSTGRES_DB:-blockly}
+#      SERVER_PORT: 8085
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://pgbouncer-write:6432/${POSTGRES_DB}?prepareThreshold=0
+#      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+#      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+#      SPRING_DATASOURCE_READ_URL: jdbc:postgresql://pgbouncer-read:6432/${POSTGRES_DB}?prepareThreshold=0
+#      SPRING_DATASOURCE_READ_USERNAME: ${POSTGRES_USER}
+#      SPRING_DATASOURCE_READ_PASSWORD: ${POSTGRES_PASSWORD}
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+#      SPRING_LIQUIBASE_ENABLED: true
+#      SPRING_PROFILES_ACTIVE: test
+#      JAVA_TOOL_OPTIONS: "-Xmx3g -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+#      SPRING_KAFKA_LISTENER_MAX_POLL_RECORDS: 50
+#      SPRING_KAFKA_LISTENER_MAX_POLL_INTERVAL_MS: "300000"
+#      SPRING_KAFKA_CONSUMER_FETCH_MAX_WAIT_MS: 500
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      postgres-replica:
+#        condition: service_healthy
+#      broker-1:
+#        condition: service_healthy
+#      broker-2:
+#        condition: service_healthy
+#      broker-3:
+#        condition: service_healthy
+#      discovery:
+#        condition: service_healthy
+#      pgbouncer-write:
+#        condition: service_started
+#      pgbouncer-read:
+#        condition: service_started
+#      prometheus:
+#        condition: service_started
+#    networks:
+#      - app-network
+#    restart: unless-stopped
 
   # Prometheus
   prometheus:
