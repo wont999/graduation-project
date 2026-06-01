@@ -18,4 +18,6 @@ public final class ExceptionMessages {
     public static final String INVALID_ARGUMENT = "Invalid argument: %s";
 
     public static final String REQUEST_TIMEOUT = "Request timeout %s %s";
+
+    public static final String REQUEST_CAPACITY_EXCEEDED = "Server is overloaded. Max %s concurrent requests in flight. Try again later.";
 }

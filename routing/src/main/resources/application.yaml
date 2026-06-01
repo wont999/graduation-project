@@ -48,3 +48,23 @@ gateway:
   
   request:
     timeout: 30
+
+routing:
+  max-in-flight: 200
+
+management:
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:8086}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: when-authorized
