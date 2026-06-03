@@ -35,6 +35,7 @@ public class ProcedureMapper {
                 .parameters(dto.parameters())
                 .replyTo(replyTo)
                 .metadata(metadata)
+                .sentAt(System.currentTimeMillis())
                 .build();
     }
 

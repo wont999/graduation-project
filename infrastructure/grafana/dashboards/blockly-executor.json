@@ -1,0 +1,589 @@
+
+"dashboard": {
+  "id": null,
+  "uid": "blockly-executor",
+  "title": "Blockly Executor - CQRS Metrics",
+  "tags": ["blockly", "cqrs", "micrometer"],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Overview",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "title": "Kafka Producer Avg Latency",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 1},
+      "targets": [
+        {
+          "expr": "rate(spring_kafka_template_seconds_sum{name=\"eventKafkaTemplate\"}[$__rate_interval]) / rate(spring_kafka_template_seconds_count{name=\"eventKafkaTemplate\"}[$__rate_interval]) * 1000",
+          "legendFormat": "Avg Latency",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 100},
+              {"color": "red", "value": 500}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "DAO Total RPS",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 1},
+      "targets": [
+        {
+          "expr": "sum(rate(blockly_dao_read_seconds_count[$__rate_interval]))",
+          "legendFormat": "DAO Read RPS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 100},
+              {"color": "red", "value": 200}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Kafka Producer RPS",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 1},
+      "targets": [
+        {
+          "expr": "sum(rate(spring_kafka_template_seconds_count{name=\"eventKafkaTemplate\"}[$__rate_interval]))",
+          "legendFormat": "Kafka RPS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 100},
+              {"color": "red", "value": 200}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "DAO Operations",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 6,
+      "title": "Read RPS",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 0, "y": 6},
+      "targets": [
+        {
+          "expr": "sum(rate(blockly_dao_read_seconds_count[$__rate_interval]))",
+          "legendFormat": "Read RPS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Write RPS",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 12, "y": 6},
+      "targets": [
+        {
+          "expr": "sum(rate(blockly_dao_write_seconds_count[$__rate_interval]))",
+          "legendFormat": "Write RPS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Read p95 Latency",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 0, "y": 11},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(blockly_dao_read_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "Read p95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Write p95 Latency",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 12, "y": 11},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(blockly_dao_write_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "Write p95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Read by Operation",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 0, "y": 16},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(blockly_dao_read_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{operation}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Write by Operation",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 12, "y": 16},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(blockly_dao_write_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{operation}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Kafka Bottleneck",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 21},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 13,
+      "title": "Kafka Producer Avg Latency by Template",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 22},
+      "targets": [
+        {
+          "expr": "rate(spring_kafka_template_seconds_sum[$__rate_interval]) / rate(spring_kafka_template_seconds_count[$__rate_interval]) * 1000",
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Kafka Producer RPS by Template",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 22},
+      "targets": [
+        {
+          "expr": "rate(spring_kafka_template_seconds_count[$__rate_interval])",
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Kafka Listener",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 22},
+      "targets": [
+        {
+          "expr": "rate(spring_kafka_listener_seconds_count[$__rate_interval])",
+          "legendFormat": "Consumed {{name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "JVM & Application",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 17,
+      "title": "JVM Heap Used",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 28},
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{application=\"blockly-executor\",area=\"heap\"} / 1024 / 1024",
+          "legendFormat": "Heap Used (MB)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "mbytes",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 18,
+      "title": "GC Pause Time",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 28},
+      "targets": [
+        {
+          "expr": "rate(jvm_gc_pause_seconds_sum{application=\"blockly-executor\"}[$__rate_interval])",
+          "legendFormat": "GC Pause",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "Thread Count",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 28},
+      "targets": [
+        {
+          "expr": "jvm_threads_live_threads{application=\"blockly-executor\"}",
+          "legendFormat": "Live Threads",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 30,
+      "title": "Latency Breakdown",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 33},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 31,
+      "title": "Kafka Queueing p95",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 34},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(blockly_kafka_queueing_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "Queueing p95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
+          }
+        }
+      }
+    },
+    {
+      "id": 32,
+      "title": "Listener Total p95",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 34},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(blockly_listener_total_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "Listener Total p95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
+          }
+        }
+      }
+    },
+    {
+      "id": 33,
+      "title": "Script Execution p95",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 34},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(blockly_script_execution_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "Script Execution p95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity"
+          }
+        }
+      }
+    },
+    {
+      "id": 20,
+      "title": "Database Connection Pool",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 39},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 21,
+      "title": "Active Connections",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 0, "y": 34},
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active{application=\"blockly-executor\"}",
+          "legendFormat": "Active ({{pool}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 22,
+      "title": "Idle Connections",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 12, "y": 34},
+      "targets": [
+        {
+          "expr": "hikaricp_connections_idle{application=\"blockly-executor\"}",
+          "legendFormat": "Idle ({{pool}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 23,
+      "title": "Connection Wait Time",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 0, "y": 39},
+      "targets": [
+        {
+          "expr": "hikaricp_connections_wait_seconds{application=\"blockly-executor\"}",
+          "legendFormat": "Wait Time ({{pool}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "id": 24,
+      "title": "Pending Threads",
+      "type": "timeseries",
+      "gridPos": {"h": 5, "w": 12, "x": 12, "y": 39},
+      "targets": [
+        {
+          "expr": "hikaricp_connections_pending{application=\"blockly-executor\"}",
+          "legendFormat": "Pending ({{pool}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      }
+    }
+  ]
+}

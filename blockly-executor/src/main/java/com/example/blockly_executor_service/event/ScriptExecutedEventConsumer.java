@@ -4,6 +4,7 @@ import com.example.blockly_executor_service.model.entity.ScriptExecutionLog;
 import com.example.blockly_executor_service.repository.ScriptExecutionLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Profile("!test")
 public class ScriptExecutedEventConsumer {
 
     private final ScriptExecutionLogRepository scriptExecutionLogRepository;

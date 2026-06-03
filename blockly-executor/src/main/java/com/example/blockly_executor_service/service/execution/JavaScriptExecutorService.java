@@ -6,13 +6,15 @@ import com.example.blockly_executor_service.event.ScriptExecutedEventPublisher;
 import com.example.blockly_executor_service.model.dto.ExecutionRequest;
 import com.example.blockly_executor_service.model.dto.ExecutionResult;
 import com.example.common.exception.ProcedureExecutionException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 
-import javax.script.*;
+import org.graalvm.polyglot.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -22,27 +24,27 @@ import java.util.UUID;
 @EnableAsync(proxyTargetClass = true)
 public class JavaScriptExecutorService implements ScriptExecutionService {
 
-    private final ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
+
     private final JdbcTemplate writeJdbcTemplate;
     private final JdbcTemplate readJdbcTemplate;
     private final ScriptExecutedEventPublisher eventPublisher;
+    private final MeterRegistry meterRegistry;
+    private final GraalContextPool contextPool;
 
     public JavaScriptExecutorService(@Qualifier("writeJdbcTemplate") JdbcTemplate writeJdbcTemplate,
                                      @Qualifier("readJdbcTemplate") JdbcTemplate readJdbcTemplate,
-                                     ScriptExecutedEventPublisher eventPublisher) {
+                                     ScriptExecutedEventPublisher eventPublisher,
+                                     MeterRegistry meterRegistry,
+                                     GraalContextPool contextPool) {
         this.writeJdbcTemplate = writeJdbcTemplate;
         this.readJdbcTemplate = readJdbcTemplate;
         this.eventPublisher = eventPublisher;
+        this.meterRegistry = meterRegistry;
+        this.contextPool = contextPool;
     }
 
     @Override
     public ExecutionResult executeScript(ExecutionRequest request) {
-
-        var scriptEngine = scriptEngineManager.getEngineByName("graal.js");
-        if (scriptEngine == null) {
-            throw new ProcedureExecutionException("GraalVM JavaScript engine not found");
-        }
-
         Instant startTime = Instant.now();
         String requestId = request.getRequestId() != null ? request.getRequestId() : UUID.randomUUID().toString();
         String tenantId = (String) request.getHeaders().get("tenantId");
@@ -52,29 +54,29 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
         }
 
         log.info("Executing script for tenant: {}", tenantId);
-
+        Context context = null;
         try{
-            //Разрешает JavaScript коду вызывать Java методы
-            scriptEngine.getContext().setAttribute("polyglot.js.allowHostAccess", true, ScriptContext.ENGINE_SCOPE);
-            //Запрещает JavaScript коду создавать новые Java объекты
-            scriptEngine.getContext().setAttribute("polyglot.js.allowHostClassLookup", false, ScriptContext.ENGINE_SCOPE);
+            context = contextPool.acquire();
 
             // Создаем DatabaseAccessor для доступа к БД с изоляцией по tenant
             CqrsDatabaseAccessor dbAccessor = new CqrsDatabaseAccessor(
                     tenantId,
                     readJdbcTemplate,
-                    writeJdbcTemplate
+                    writeJdbcTemplate,
+                    meterRegistry
             );
-            scriptEngine.put("DB", dbAccessor);
-
-            if(request.getParams() != null){
-                request.getParams().forEach(scriptEngine::put);
+            Value bindings = context.getBindings("js");
+            bindings.putMember("DB", dbAccessor);
+            if (request.getParams() != null) {
+                request.getParams().forEach(bindings::putMember);
             }
 
-            Object result = scriptEngine.eval(request.getScript());
+            Value evalResult = context.eval("js", request.getScript());
+            Object result = convert(evalResult);
 
             Instant endTime = Instant.now();
             Long executionTime = Duration.between(startTime, endTime).toMillis();
+            recordTimer(tenantId, ExecutionResult.ExecutionStatus.SUCCESS, startTime, endTime);
 
 
             publishScriptExecutedEvent(request, startTime, endTime, executionTime,
@@ -89,17 +91,18 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
                     .endTime(endTime)
                     .build();
 
-        } catch (ScriptException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             Instant endTime = Instant.now();
             Long executionTime = Duration.between(startTime, endTime).toMillis();
 
             log.error("SCRIPT_ERROR - RequestId: {} - {} - Script failed in {}ms at {}",
                 requestId,e.getMessage(), executionTime, endTime);
 
+            recordTimer(tenantId, ExecutionResult.ExecutionStatus.ERROR, startTime, endTime);
 
             publishScriptExecutedEvent(request, startTime, endTime, executionTime,
                     ExecutionResult.ExecutionStatus.ERROR, e.getMessage());
-
             return ExecutionResult.builder()
                     .requestId(requestId)
                     .errorMessage(e.getMessage())
@@ -115,6 +118,7 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             log.error("SCRIPT_ERROR - RequestId: {} - {} - Script failed in {}ms at {}",
                 requestId,e.getMessage(), executionTime, endTime);
 
+            recordTimer(tenantId, ExecutionResult.ExecutionStatus.ERROR, startTime, endTime);
 
             publishScriptExecutedEvent(request, startTime, endTime, executionTime,
                     ExecutionResult.ExecutionStatus.ERROR, e.getMessage());
@@ -127,27 +131,47 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
                     .startTime(startTime)
                     .endTime(endTime)
                     .build();
+        } finally {
+            contextPool.release(context);
         }
     }
 
+    private Object convert(Value v) {
+        if (v == null || v.isNull()) return null;
+        if (v.isHostObject()) return v.asHostObject();
+        if (v.isString()) return v.asString();
+        if (v.isBoolean()) return v.asBoolean();
+        if (v.isNumber()) return v.fitsInLong() ? v.asLong() : v.asDouble();
+        if (v.hasArrayElements()) {
+            java.util.List<Object> list = new java.util.ArrayList<>();
+            for (long i = 0; i < v.getArraySize(); i++) list.add(convert(v.getArrayElement(i)));
+            return list;
+        }
+        return v.toString();
+    }
+
+    private void recordTimer(String tenantId, ExecutionResult.ExecutionStatus status, Instant s, Instant e) {
+        Timer.builder("blockly_script_execution")
+                .tag("tenant", tenantId).tag("status", status.toString())
+                .publishPercentileHistogram().register(meterRegistry)
+                .record(Duration.between(s, e));
+    }
 
 
 
 
     @Override
     public boolean validateScript(String script) {
-        var scriptEngine = scriptEngineManager.getEngineByName("graal.js");
-        if (scriptEngine == null) {
-            throw new ProcedureExecutionException("GraalVM JavaScript engine not found");
-        }
-        log.info("ScriptEngine found: {}",scriptEngine.getClass().getName());
-
-        try{
-            CompiledScript compiledScript = ((Compilable) scriptEngine).compile(script);
+        Context context = null;
+        try {
+            context = contextPool.acquire();
+            context.parse("js", script);
             return true;
-        } catch (ScriptException e) {
+        } catch (Exception e) {
             log.error("Script validation failed: {}", e.getMessage());
             return false;
+        } finally {
+            contextPool.release(context);
         }
     }
 

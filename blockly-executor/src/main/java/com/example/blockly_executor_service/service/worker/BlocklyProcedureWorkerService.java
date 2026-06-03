@@ -6,6 +6,8 @@ import com.example.common.mapper.ProcedureMapper;
 import com.example.common.model.ProcedurePayload;
 import com.example.common.model.ProcedureResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.util.Map;
 
 import static com.example.common.exception.ExceptionMessages.PROCEDURE_NOT_FOUND;
@@ -27,19 +30,32 @@ public class BlocklyProcedureWorkerService {
     final ObjectMapper objectMapper;
     final KafkaTemplate<String, ProcedureResponse<?>> responseKafkaTemplate;
     final ProcedureMapper procedureMapper;
+    final MeterRegistry meterRegistry;
 
     @KafkaListener(topics = "blockly-executor-procedures", groupId = "worker-blockly-executor", containerFactory = "blocklyKafkaListenerContainerFactory")
     public void handleBlocklyProcedure(ProcedurePayload<?> request) {
-        log.info("Processing BLOCKLY-EXECUTOR procedure: {} (requestId: {})", request.procedureName(), request.requestId());
+        Timer.builder("blockly_listener_total")
+                .publishPercentileHistogram()
+                .register(meterRegistry)
+                .record(() -> {
+                    long receivedAt = System.currentTimeMillis();
+                    log.info("Processing BLOCKLY-EXECUTOR procedure: {} (requestId: {})", request.procedureName(), request.requestId());
 
-        try {
-            ProcedureResponse<?> response = executeProcedure(request);
-            sendResponse(request.replyTo(), request.requestId(), response);
-        } catch (Exception e) {
-            log.error("Error processing procedure: {}", e.getMessage(), e);
-            ProcedureResponse<?> errorResponse = procedureMapper.toResponseError(request, e.getMessage());
-            sendResponse(request.replyTo(), request.requestId(), errorResponse);
-        }
+                    try {
+                        long queueingMs = receivedAt - request.sentAt();
+                        Timer.builder("blockly_kafka_queueing")
+                                .publishPercentileHistogram()
+                                .register(meterRegistry)
+                                .record(Duration.ofMillis(queueingMs));
+
+                        ProcedureResponse<?> response = executeProcedure(request);
+                        sendResponse(request.replyTo(), request.requestId(), response);
+                    } catch (Exception e) {
+                        log.error("Error processing procedure: {}", e.getMessage(), e);
+                        ProcedureResponse<?> errorResponse = procedureMapper.toResponseError(request, e.getMessage());
+                        sendResponse(request.replyTo(), request.requestId(), errorResponse);
+                    }
+                });
     }
 
     public <P, R> ProcedureResponse<R> executeProcedure(ProcedurePayload<P> request) {
