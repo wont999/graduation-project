@@ -73,7 +73,7 @@ public class CqrsTenantAwareWriteDao {
             Object[] values = columns.stream().map(data::get).toArray();
 
             List<Map<String, Object>> results = writeJdbcTemplate.queryForList(sql, values);
-            return results.isEmpty() ? null : results.get(0);
+            return results.isEmpty() ? null : new JSResult(results.get(0));
         });
     }
 

@@ -2,6 +2,7 @@ package com.example.routing.service;
 
 import com.example.common.exception.ExceptionMessages;
 import com.example.common.exception.KafkaSendException;
+import com.example.common.exception.RequestCapacityExceededException;
 import com.example.common.mapper.ProcedureMapper;
 import com.example.common.model.ProcedurePayload;
 import com.example.common.model.ProcedureRequestDto;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -33,6 +35,7 @@ public class ProcedureGatewayService {
     final ClientTypeTopicMapper clientTypeTopicMapper;
     final String instanceId;
     final ProcedureMapper procedureMapper;
+    final InFlightLimiter inFlightLimiter;
 
     @Value("${gateway.request.timeout:30}")
     long requestTimeoutSeconds;
@@ -41,16 +44,24 @@ public class ProcedureGatewayService {
      * Выполняет процедуру: отправляет в Kafka и синхронно ждет ответ
      */
     public ProcedureResponse<?> executeProcedure(ProcedureRequestDto<?> requestDto, String userId,  String organizationId) {
-        var payload = procedureMapper.toPayload(requestDto, instanceId, userId, organizationId);
+        if (!inFlightLimiter.tryAcquire()) {
+            throw new RequestCapacityExceededException(
+                    String.format(ExceptionMessages.REQUEST_CAPACITY_EXCEEDED, inFlightLimiter.getMaxInFlight()));
+        }
+        try {
+            var payload = procedureMapper.toPayload(requestDto, instanceId, userId, organizationId);
 
-        var responseFuture = responseStorage.createPendingRequest(payload.requestId());
+            var responseFuture = responseStorage.createPendingRequest(payload.requestId());
 
-        var targetTopic = clientTypeTopicMapper.getTopicForClientType(requestDto.clientType());
-        log.info("Sending procedure '{}' to topic '{}' with requestId: {}", requestDto.procedureName(), targetTopic, payload.requestId());
+            var targetTopic = clientTypeTopicMapper.getTopicForClientType(requestDto.clientType());
+            log.info("Sending procedure '{}' to topic '{}' with requestId: {}", requestDto.procedureName(), targetTopic, payload.requestId());
 
-        sendToKafka(targetTopic, payload, responseFuture);
+            sendToKafka(targetTopic, payload, responseFuture);
 
-        return awaitResponse(payload.requestId(), responseFuture);
+            return awaitResponse(payload.requestId(), responseFuture);
+        } finally {
+            inFlightLimiter.release();
+        }
     }
 
     /**

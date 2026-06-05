@@ -99,4 +99,20 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+    @ExceptionHandler(RequestCapacityExceededException.class)
+    public ResponseEntity<ProcedureResponse<?>> handleCapacityExceeded(
+            RequestCapacityExceededException ex) {
+
+        log.warn("Backpressure triggered: {}", ex.getMessage());
+
+        val response = ProcedureResponse.builder()
+                .success(false)
+                .errorMessage(ex.getMessage())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", "1")
+                .body(response);
+    }
 }

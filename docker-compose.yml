@@ -354,8 +354,12 @@ services:
       dockerfile: Dockerfile
     environment:
       SERVER_PORT: 8081
+      MANAGEMENT_SERVER_PORT: 8086
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery:8761/eureka/
+    ports:
+      - "8081:8081"
+      - "8086:8086"
     depends_on:
       broker-1:
         condition: service_healthy

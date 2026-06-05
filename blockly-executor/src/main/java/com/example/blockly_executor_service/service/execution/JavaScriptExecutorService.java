@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 
+import com.example.blockly_executor_service.dao.JSResult;
 import org.graalvm.polyglot.*;
 import java.time.Duration;
 import java.time.Instant;
@@ -138,7 +139,11 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
 
     private Object convert(Value v) {
         if (v == null || v.isNull()) return null;
-        if (v.isHostObject()) return v.asHostObject();
+        if (v.isHostObject()) {
+            Object obj = v.asHostObject();
+            if (obj instanceof JSResult jsr) return jsr.toMap();
+            return obj;
+        }
         if (v.isString()) return v.asString();
         if (v.isBoolean()) return v.asBoolean();
         if (v.isNumber()) return v.fitsInLong() ? v.asLong() : v.asDouble();

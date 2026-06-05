@@ -10,3 +10,10 @@ scrape_configs:
           - 'blockly-executor-1:8086'
           - 'blockly-executor-2:8086'
     scrape_interval: 10s
+
+  - job_name: 'routing'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets:
+          - 'routing:8086'
+    scrape_interval: 10s
