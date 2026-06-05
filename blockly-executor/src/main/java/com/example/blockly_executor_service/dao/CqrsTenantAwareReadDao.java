@@ -93,18 +93,166 @@ public class CqrsTenantAwareReadDao {
 
             List<Object> params = new ArrayList<>();
 
-            for (Map.Entry<String, Object> entry : conditions.entrySet()) {
-                String columnName = entry.getKey();
-                if (!VALID_COLUMN_NAME.matcher(columnName).matches()) {
-                    throw new SecurityException("Invalid column name: " + columnName);
-                }
-                sql.append(" AND ").append(columnName).append(" = ?");
-                params.add(entry.getValue());
+            int limit = 100;
+            int offset = 0;
+
+            if (conditions.containsKey("__limit")) {
+                try {
+                    limit = Math.min(Math.max(1, ((Number) conditions.get("__limit")).intValue()), 1000);
+                } catch (Exception ignored) {}
+                conditions.remove("__limit");
+            }
+            if (conditions.containsKey("__offset")) {
+                try {
+                    offset = Math.max(0, ((Number) conditions.get("__offset")).intValue());
+                } catch (Exception ignored) {}
+                conditions.remove("__offset");
             }
 
-            sql.append(" ORDER BY id");
+            buildWhereClause(conditions, sql, params);
+
+            sql.append(" ORDER BY id LIMIT ").append(limit);
+            if (offset > 0) {
+                sql.append(" OFFSET ").append(offset);
+            }
             return readJdbcTemplate.queryForList(sql.toString(), params.toArray());
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    private void buildWhereClause(Map<String, Object> conditions, StringBuilder sql, List<Object> params) {
+        for (Map.Entry<String, Object> entry : conditions.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            if (key.equals("__and")) {
+                List<Object> list = (List<Object>) value;
+                for (Object item : list) {
+                    if (item instanceof Map) {
+                        sql.append(" AND (");
+                        buildWhereClause((Map<String, Object>) item, sql, params);
+                        sql.append(")");
+                    }
+                }
+            } else if (key.equals("__or")) {
+                List<Object> list = (List<Object>) value;
+                boolean first = true;
+                for (Object item : list) {
+                    if (item instanceof Map) {
+                        sql.append(first ? " AND (" : " OR ");
+                        buildWhereClause((Map<String, Object>) item, sql, params);
+                        first = false;
+                    }
+                }
+                sql.append(")");
+            } else if (key.equals("__not")) {
+                if (value instanceof Map) {
+                    sql.append(" AND NOT (");
+                    buildWhereClause((Map<String, Object>) value, sql, params);
+                    sql.append(")");
+                }
+            } else if (!VALID_COLUMN_NAME.matcher(key).matches()) {
+                throw new SecurityException("Invalid column name: " + key);
+            } else if (value instanceof Map) {
+                applyOperator(sql, params, key, (Map<String, Object>) value);
+            } else {
+                sql.append(" AND ").append(key).append(" = ?");
+                params.add(value);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyOperator(StringBuilder sql, List<Object> params, String column, Map<String, Object> op) {
+        String operator = (String) op.get("op");
+        if (operator == null) {
+            sql.append(" AND ").append(column).append(" = ?");
+            params.add(op.get("value"));
+            return;
+        }
+
+        switch (operator) {
+            case "=", "==":
+                sql.append(" AND ").append(column).append(" = ?");
+                params.add(op.get("value"));
+                break;
+            case ">":
+                sql.append(" AND ").append(column).append(" > ?");
+                params.add(op.get("value"));
+                break;
+            case "<":
+                sql.append(" AND ").append(column).append(" < ?");
+                params.add(op.get("value"));
+                break;
+            case ">=", "≥":
+                sql.append(" AND ").append(column).append(" >= ?");
+                params.add(op.get("value"));
+                break;
+            case "<=", "≤":
+                sql.append(" AND ").append(column).append(" <= ?");
+                params.add(op.get("value"));
+                break;
+            case "!=", "≠":
+                sql.append(" AND ").append(column).append(" != ?");
+                params.add(op.get("value"));
+                break;
+            case "like":
+            case "ilike":
+                sql.append(" AND ").append(column).append(" ILIKE ?");
+                params.add(op.get("value"));
+                break;
+            case "~":
+                sql.append(" AND ").append(column).append(" ~ ?");
+                params.add(op.get("value"));
+                break;
+            case "~*":
+                sql.append(" AND ").append(column).append(" ~* ?");
+                params.add(op.get("value"));
+                break;
+            case "!~":
+                sql.append(" AND ").append(column).append(" !~ ?");
+                params.add(op.get("value"));
+                break;
+            case "!~*":
+                sql.append(" AND ").append(column).append(" !~* ?");
+                params.add(op.get("value"));
+                break;
+            case "between":
+                sql.append(" AND ").append(column).append(" BETWEEN ? AND ?");
+                params.add(op.get("from"));
+                params.add(op.get("to"));
+                break;
+            case "is_null":
+                sql.append(" AND ").append(column).append(" IS NULL");
+                break;
+            case "is_not_null":
+                sql.append(" AND ").append(column).append(" IS NOT NULL");
+                break;
+            case "in":
+                List<Object> inList = (List<Object>) op.get("value");
+                if (inList != null && !inList.isEmpty()) {
+                    sql.append(" AND ").append(column).append(" IN (");
+                    for (int i = 0; i < inList.size(); i++) {
+                        sql.append(i > 0 ? ", " : "").append("?");
+                        params.add(inList.get(i));
+                    }
+                    sql.append(")");
+                }
+                break;
+            case "not_in":
+                List<Object> notInList = (List<Object>) op.get("value");
+                if (notInList != null && !notInList.isEmpty()) {
+                    sql.append(" AND ").append(column).append(" NOT IN (");
+                    for (int i = 0; i < notInList.size(); i++) {
+                        sql.append(i > 0 ? ", " : "").append("?");
+                        params.add(notInList.get(i));
+                    }
+                    sql.append(")");
+                }
+                break;
+            default:
+                throw new SecurityException("Unsupported operator: " + operator);
+        }
     }
 
     @HostAccess.Export
@@ -121,6 +269,7 @@ public class CqrsTenantAwareReadDao {
                 readJdbcTemplate.queryForObject(countSql, Long.class)
         );
     }
+
 
     @HostAccess.Export
     public List<Map<String, Object>> executeRawQuery(String sql, Object... params) {

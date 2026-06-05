@@ -1,11 +1,10 @@
 package com.example.blockly_executor_service.service.execution;
 
 import com.example.blockly_executor_service.dao.CqrsDatabaseAccessor;
-import com.example.blockly_executor_service.event.ScriptExecutedEvent;
-import com.example.blockly_executor_service.event.ScriptExecutedEventPublisher;
 import com.example.blockly_executor_service.model.dto.ExecutionRequest;
 import com.example.blockly_executor_service.model.dto.ExecutionResult;
-import com.example.common.exception.ProcedureExecutionException;
+
+import com.example.blockly_executor_service.service.GraalContextPool;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
@@ -28,18 +27,15 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
 
     private final JdbcTemplate writeJdbcTemplate;
     private final JdbcTemplate readJdbcTemplate;
-    private final ScriptExecutedEventPublisher eventPublisher;
     private final MeterRegistry meterRegistry;
     private final GraalContextPool contextPool;
 
     public JavaScriptExecutorService(@Qualifier("writeJdbcTemplate") JdbcTemplate writeJdbcTemplate,
                                      @Qualifier("readJdbcTemplate") JdbcTemplate readJdbcTemplate,
-                                     ScriptExecutedEventPublisher eventPublisher,
                                      MeterRegistry meterRegistry,
                                      GraalContextPool contextPool) {
         this.writeJdbcTemplate = writeJdbcTemplate;
         this.readJdbcTemplate = readJdbcTemplate;
-        this.eventPublisher = eventPublisher;
         this.meterRegistry = meterRegistry;
         this.contextPool = contextPool;
     }
@@ -79,10 +75,6 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             Long executionTime = Duration.between(startTime, endTime).toMillis();
             recordTimer(tenantId, ExecutionResult.ExecutionStatus.SUCCESS, startTime, endTime);
 
-
-            publishScriptExecutedEvent(request, startTime, endTime, executionTime,
-                    ExecutionResult.ExecutionStatus.SUCCESS, null);
-
             return ExecutionResult.builder()
                     .requestId(requestId)
                     .result(result)
@@ -102,8 +94,6 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
 
             recordTimer(tenantId, ExecutionResult.ExecutionStatus.ERROR, startTime, endTime);
 
-            publishScriptExecutedEvent(request, startTime, endTime, executionTime,
-                    ExecutionResult.ExecutionStatus.ERROR, e.getMessage());
             return ExecutionResult.builder()
                     .requestId(requestId)
                     .errorMessage(e.getMessage())
@@ -120,9 +110,6 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
                 requestId,e.getMessage(), executionTime, endTime);
 
             recordTimer(tenantId, ExecutionResult.ExecutionStatus.ERROR, startTime, endTime);
-
-            publishScriptExecutedEvent(request, startTime, endTime, executionTime,
-                    ExecutionResult.ExecutionStatus.ERROR, e.getMessage());
 
             return ExecutionResult.builder()
                     .requestId(requestId)
@@ -177,35 +164,6 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             return false;
         } finally {
             contextPool.release(context);
-        }
-    }
-
-
-    private void publishScriptExecutedEvent(ExecutionRequest request,
-                                            Instant startTime,
-                                            Instant endTime,
-                                            Long executionTimeMs,
-                                            ExecutionResult.ExecutionStatus status,
-                                            String errorMessage) {
-        try{
-            String userId = (String) request.getHeaders().get("userId");
-            String tenantId = (String) request.getHeaders().get("tenantId");
-
-            ScriptExecutedEvent event = ScriptExecutedEvent.builder()
-                    .requestId(request.getRequestId())
-                    .userId(userId)
-                    .tenantId(tenantId)
-                    .scriptPreview(preview(request.getScript(),500))
-                    .status(status)
-                    .errorMessage(preview(errorMessage,1000))
-                    .startTime(startTime)
-                    .endTime(endTime)
-                    .executionTimeMs(executionTimeMs)
-                    .build();
-
-            eventPublisher.publishEvent(event);
-        } catch (Exception e){
-            log.error("Failed to publish ScriptExecutedEvent for requestId: {}: {}",request.getRequestId(), e.getMessage(),e);
         }
     }
 

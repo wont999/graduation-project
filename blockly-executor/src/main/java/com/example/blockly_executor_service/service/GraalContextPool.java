@@ -1,4 +1,4 @@
-package com.example.blockly_executor_service.service.execution;
+package com.example.blockly_executor_service.service;
 
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;

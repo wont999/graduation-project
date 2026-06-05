@@ -13,6 +13,7 @@ spring:
       properties:
         spring.json.add.type.headers: false
         enable.idempotence: true
+        max.request.size: 5242880
     
     consumer:
       auto-offset-reset: latest

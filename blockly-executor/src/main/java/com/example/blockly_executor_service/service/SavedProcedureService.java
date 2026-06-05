@@ -34,8 +34,7 @@ public class SavedProcedureService {
 
     public List<Map<String, Object>> listByTenant(String tenantId) {
         return readJdbcTemplate.query(
-                "SELECT id, tenant_id, name, description, created_at, updated_at " +
-                        "FROM saved_procedures WHERE tenant_id = ? ORDER BY updated_at DESC",
+                "SELECT * FROM saved_procedures WHERE tenant_id = ? ORDER BY updated_at DESC",
                 rowMapper, tenantId
         );
     }
