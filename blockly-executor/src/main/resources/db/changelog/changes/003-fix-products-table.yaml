@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-timestamps-to-products
+      author: developer
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            schemaName: tenant_appliner
+            tableName: products
+        - not:
+            columnExists:
+              schemaName: tenant_appliner
+              tableName: products
+              columnName: created_at
+      changes:
+        - addColumn:
+            schemaName: tenant_appliner
+            tableName: products
+            columns:
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
