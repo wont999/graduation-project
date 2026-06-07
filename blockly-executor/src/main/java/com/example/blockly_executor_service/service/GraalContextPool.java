@@ -22,25 +22,38 @@ public class GraalContextPool {
 
     private final BlockingQueue<Context> pool;
     private final int size;
+    private final boolean poolEnabled;
 
-    public GraalContextPool(@Value("${blockly.graal.pool-size:6}") int size) {
-        this.size = size;
-        this.pool = new ArrayBlockingQueue<>(size);
-        for (int i = 0; i < size; i++) {
-            pool.offer(createContext());
+    public GraalContextPool(
+            @Value("${blockly.graal.pool-size:6}") int size,
+            @Value("${blockly.graal.pool-enabled:true}") boolean poolEnabled) {
+        this.poolEnabled = poolEnabled;
+        if (poolEnabled) {
+            this.size = size;
+            this.pool = new ArrayBlockingQueue<>(size);
+            for (int i = 0; i < size; i++) {
+                pool.offer(createContext());
+            }
+            log.info("GraalContextPool initialized with {} reusable contexts", size);
+        } else {
+            this.size = 0;
+            this.pool = null;
+            log.info("GraalContextPool DISABLED — new context per request");
         }
-        log.info("GraalContextPool initialized with {} reusable contexts", size);
     }
 
     private Context createContext() {
         return Context.newBuilder("js")
                 .engine(engine)
-                .allowHostAccess(HostAccess.EXPLICIT)   // только @HostAccess.Export
+                .allowHostAccess(HostAccess.EXPLICIT)
                 .allowHostClassLookup(className -> false)
                 .build();
     }
 
     public Context acquire() throws InterruptedException {
+        if (!poolEnabled) {
+            return createContext();
+        }
         Context ctx = pool.poll(30, TimeUnit.SECONDS);
         if (ctx == null) {
             throw new IllegalStateException("No GraalVM context available within 30s (pool exhausted)");
@@ -50,7 +63,10 @@ public class GraalContextPool {
 
     public void release(Context ctx) {
         if (ctx == null) return;
-        // очищаем биндинги, чтобы DB одного tenant не утёк в следующий запрос
+        if (!poolEnabled) {
+            ctx.close(true);
+            return;
+        }
         try {
             ctx.getBindings("js").removeMember("DB");
         } catch (Exception ignored) { }
@@ -63,9 +79,11 @@ public class GraalContextPool {
 
     @PreDestroy
     public void shutdown() {
-        Context c;
-        while ((c = pool.poll()) != null) {
-            try { c.close(true); } catch (Exception ignored) { }
+        if (pool != null) {
+            Context c;
+            while ((c = pool.poll()) != null) {
+                try { c.close(true); } catch (Exception ignored) { }
+            }
         }
         engine.close();
     }
