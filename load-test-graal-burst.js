@@ -26,17 +26,11 @@ export const options = {
 
 const SCRIPTS = {
     'cpu-heavy': `
-let result = 0;
-for (let outer = 0; outer < 100; outer++) {
-    let arr = [];
-    for (let i = 0; i < 1000; i++) {
-        arr.push({ id: i, value: Math.sqrt(i), text: 'item-' + i });
-    }
-    for (let i = 0; i < arr.length; i++) {
-        result += arr[i].value;
-    }
+let map = {};
+for (let i = 0; i < 5000; i++) {
+    map["key_" + i] = { value: i, arr: [1,2,3,4,5] };
 }
-result;`,
+Object.keys(map).length;`,
     'exec-only': `DB.table('products').findAll({ __limit: 100 })`
 };
 
