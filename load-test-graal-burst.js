@@ -8,6 +8,7 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:8180/routing';
 const KEYCLOAK_URL = 'http://localhost:8080/realms/appliner/protocol/openid-connect/token';
 const VU_COUNT = parseInt(__ENV.VU_COUNT || '200');
 const SCENARIO = __ENV.SCENARIO || 'exec-only';
+const TEST_ID = __ENV.TEST_ID || 'default';
 
 export const options = {
     setupTimeout: '120s',
@@ -20,7 +21,8 @@ export const options = {
                 { duration: '5s', target: 0 }
             ],
             gracefulRampDown: '0s',
-            exec: 'burstScenario'
+            exec: 'burstScenario',
+            tags: { test_id: TEST_ID, scenario: 'burst', vu_count: String(VU_COUNT) }
         }
     }
 };
@@ -44,7 +46,8 @@ function executeScript(script, token) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         },
-        timeout: '120s'
+        timeout: '120s',
+        tags: { test_id: TEST_ID, scenario: 'burst', vu_count: String(VU_COUNT) }
     });
     const duration = Date.now() - start;
 
