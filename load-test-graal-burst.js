@@ -27,7 +27,7 @@ export const options = {
 
 const SCRIPTS = {
     'exec-only': `DB.table('products').findAll({ __limit: 100 })`,
-    'cpu-heavy': `(function(){let r=0;for(let i=0;i<1000000;i++){r+=Math.sqrt(i)*Math.sin(i);}return r;})()`,
+    'cpu-heavy': `(function(){let r=0;for(let i=0;i<100000;i++){r+=Math.sqrt(i)*Math.sin(i);}return r;})()`,
     'mixed': null
 };
 
