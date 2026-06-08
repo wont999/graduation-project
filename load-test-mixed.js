@@ -4,7 +4,8 @@ import { Rate, Trend, Counter } from 'k6/metrics';
 
 const errorRate = new Rate('errors');
 const latency = new Trend('request_latency');
-const timeouts = new Counter('timeouts');
+const readErrors = new Counter('read_errors');
+const writeErrors = new Counter('write_errors');
 
 export const options = {
     setupTimeout: '120s',
@@ -52,7 +53,6 @@ function executeScript(script, token) {
   });
 
   if (res.status === 0) {
-    timeouts.add(1);
     console.log(`TIMEOUT vu=${__VU}`);
   } else if (!success) {
     errorRate.add(1);
@@ -91,16 +91,19 @@ export default function (data) {
     return;
   }
 
-  const price = Math.floor(Math.random() * 1000) + 1;
   const rand = Math.random();
 
   if (rand < 0.5) {
-    // 50% create
-    executeScript(`DB.table('products').create({name: 'vu-${__VU}-${__ITER}', price: ${price}})`, data.token);
+    executeScript(`DB.table('products').findAll()`, data.token);
   } else {
-    // 50% update
-    const id = Math.floor(Math.random() * 10000) + 1;
-    executeScript(`DB.table('products').update(${id}, {price: ${price}})`, data.token);
+    const price = Math.floor(Math.random() * 1000) + 1;
+    const writeRand = Math.random();
+    if (writeRand < 0.5) {
+      executeScript(`DB.table('products').create({name: 'vu-${__VU}-${__ITER}', price: ${price}})`, data.token);
+    } else {
+      const id = Math.floor(Math.random() * 10000) + 1;
+      executeScript(`DB.table('products').update(${id}, {price: ${price}})`, data.token);
+    }
   }
 
   sleep(0.1);

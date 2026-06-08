@@ -1,19 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { Rate, Trend, Counter } from 'k6/metrics';
+import { Rate, Trend } from 'k6/metrics';
 
 const errorRate = new Rate('errors');
 const latency = new Trend('request_latency');
-const timeouts = new Counter('timeouts');
 
 export const options = {
     setupTimeout: '120s',
     stages: [
-        { duration: '20s', target: 100 },
-        { duration: '40s', target: 300 },
-        { duration: '40s', target: 500 },
-        { duration: '40s', target: 800 },
-        { duration: '20s', target: 0 },
+        { duration: '5s', target: 10 },
+        { duration: '60s', target: 10 },
+        { duration: '5s', target: 0 },
     ],
     thresholds: {
         http_req_failed: ['rate<0.5'],
@@ -22,26 +19,22 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8180/routing';
 const KEYCLOAK_URL = 'http://localhost:8080/realms/appliner/protocol/openid-connect/token';
+const CLIENT_SECRET = 'kZwCo8x0OioQvjmkXD9aY8FtYgJ6Z5Zs';
 
 function executeScript(script, token) {
   const payload = JSON.stringify({
     clientType: "blockly-executor",
     procedureName: "executeBlocklyScript",
-    parameters: {
-      script: script,
-      parameters: {}
-    }
+    parameters: { script: script, parameters: {} }
   });
 
-  const start = Date.now();
   const res = http.post(`${BASE_URL}/api/procedures/execute`, payload, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    timeout: '120s',
+    timeout: '30s',
   });
-  const duration = Date.now() - start;
 
   let bodyObj = null;
   try { bodyObj = res.json(); } catch (e) {}
@@ -51,25 +44,19 @@ function executeScript(script, token) {
     'success is true': () => bodyObj && bodyObj.success === true,
   });
 
-  if (res.status === 0) {
-    timeouts.add(1);
-    console.log(`TIMEOUT vu=${__VU}`);
-  } else if (!success) {
+  if (!success) {
     errorRate.add(1);
-    console.log(`FAIL vu=${__VU} status=${res.status} body=${(res.body || '').substring(0, 100)}`);
   } else {
     errorRate.add(0);
-    latency.add(duration);
+    latency.add(res.timings.duration);
   }
-
-  return bodyObj;
 }
 
 export function setup() {
   const res = http.post(KEYCLOAK_URL, {
     grant_type: 'password',
     client_id: 'gateway-client',
-    client_secret: 'kZwCo8x0OioQvjmkXD9aY8FtYgJ6Z5Zs',
+    client_secret: CLIENT_SECRET,
     username: 'testuser',
     password: 'testpass',
   }, {
@@ -81,24 +68,18 @@ export function setup() {
     return null;
   }
 
-  const token = res.json('access_token');
-  console.log('Auth successful');
-  return { token };
+  return { token: res.json('access_token') };
 }
 
 export default function (data) {
-  if (!data || !data.token) {
-    return;
-  }
+  if (!data || !data.token) return;
 
   const price = Math.floor(Math.random() * 1000) + 1;
   const rand = Math.random();
 
   if (rand < 0.5) {
-    // 50% create
     executeScript(`DB.table('products').create({name: 'vu-${__VU}-${__ITER}', price: ${price}})`, data.token);
   } else {
-    // 50% update
     const id = Math.floor(Math.random() * 10000) + 1;
     executeScript(`DB.table('products').update(${id}, {price: ${price}})`, data.token);
   }
