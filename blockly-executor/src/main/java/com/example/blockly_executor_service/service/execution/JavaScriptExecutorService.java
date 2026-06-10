@@ -64,6 +64,7 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             );
             Value bindings = context.getBindings("js");
             bindings.putMember("DB", dbAccessor);
+            bindings.putMember("__toArr", new ToJSArray(context));
             if (request.getParams() != null) {
                 request.getParams().forEach(bindings::putMember);
             }
@@ -79,25 +80,6 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
                     .requestId(requestId)
                     .result(result)
                     .status(ExecutionResult.ExecutionStatus.SUCCESS)
-                    .executionTime(executionTime)
-                    .startTime(startTime)
-                    .endTime(endTime)
-                    .build();
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Instant endTime = Instant.now();
-            Long executionTime = Duration.between(startTime, endTime).toMillis();
-
-            log.error("SCRIPT_ERROR - RequestId: {} - {} - Script failed in {}ms at {}",
-                requestId,e.getMessage(), executionTime, endTime);
-
-            recordTimer(tenantId, ExecutionResult.ExecutionStatus.ERROR, startTime, endTime);
-
-            return ExecutionResult.builder()
-                    .requestId(requestId)
-                    .errorMessage(e.getMessage())
-                    .status(ExecutionResult.ExecutionStatus.ERROR)
                     .executionTime(executionTime)
                     .startTime(startTime)
                     .endTime(endTime)

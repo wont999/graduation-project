@@ -54,22 +54,22 @@ public class CqrsTenantAwareDao {
     }
 
     @HostAccess.Export
-    public List<Map<String, Object>> findAll() {
+    public Object findAll() {
         return getReadDao().findAll();
     }
 
     @HostAccess.Export
-    public List<Map<String, Object>> findAll(int limit) {
+    public Object findAll(int limit) {
         return getReadDao().findAll(limit);
     }
 
     @HostAccess.Export
-    public List<Map<String, Object>> findRecent(int count) {
+    public Object findRecent(int count) {
         return getReadDao().findRecent(count);
     }
 
     @HostAccess.Export
-    public List<Map<String, Object>> where(Map<String, Object> conditions) {
+    public Object where(Map<String, Object> conditions) {
         return getReadDao().where(conditions);
     }
 

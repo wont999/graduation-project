@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-06-09T12:00:00.000Z" agent="draw.io" version="24.0.0">
+  <diagram id="graalvm-pool" name="GraalVM Pool">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="GraalVM Context Pool — Схема работы" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=18;fontColor=#1E293B;" vertex="1" parent="1">
+          <mxGeometry x="300" y="15" width="400" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- LEFT: Without Pool (old approach) -->
+        <mxCell id="old_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#FECACA;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="60" width="480" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_title" value="Без пула (ScriptEngine)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=13;fontColor=#DC2626;" vertex="1" parent="1">
+          <mxGeometry x="140" y="68" width="200" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Old: Request 1 -->
+        <mxCell id="old_req1" value="Запрос 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCA5A5;strokeColor=#DC2626;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="100" width="80" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_eng1" value="new Engine()&#xa;+ new Context()&#xa;~500ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="145" y="95" width="110" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_exec1" value="exec&#xa;10ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCA5A5;strokeColor=#DC2626;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="275" y="100" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_res1" value="close()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="355" y="102" width="60" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- Old: Request 2 -->
+        <mxCell id="old_req2" value="Запрос 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCA5A5;strokeColor=#DC2626;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="155" width="80" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_eng2" value="new Engine()&#xa;+ new Context()&#xa;~500ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="145" y="150" width="110" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_exec2" value="exec&#xa;10ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCA5A5;strokeColor=#DC2626;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="275" y="155" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_res2" value="close()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="355" y="157" width="60" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- Old: Request 3 -->
+        <mxCell id="old_req3" value="Запрос 3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCA5A5;strokeColor=#DC2626;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="210" width="80" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_eng3" value="new Engine()&#xa;+ new Context()&#xa;~500ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="145" y="205" width="110" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_exec3" value="exec&#xa;10ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCA5A5;strokeColor=#DC2626;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="275" y="210" width="60" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="old_res3" value="close()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="355" y="212" width="60" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- Old total -->
+        <mxCell id="old_total" value="Итого: ~1500ms на 3 запроса" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=11;fontColor=#DC2626;" vertex="1" parent="1">
+          <mxGeometry x="100" y="265" width="300" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Old arrows -->
+        <mxCell id="old_a1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_req1" target="old_eng1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="old_a2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_eng1" target="old_exec1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="old_a3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_exec1" target="old_res1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="old_a4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_req2" target="old_eng2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="old_a5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_eng2" target="old_exec2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="old_a6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_exec2" target="old_res2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="old_a7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_req3" target="old_eng3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="old_a8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_eng3" target="old_exec3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="old_a9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#DC2626;" edge="1" source="old_exec3" target="old_res3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- RIGHT: With Pool (new approach) -->
+        <mxCell id="new_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#BBF7D0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="60" width="510" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="new_title" value="С GraalVM Context Pool" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=13;fontColor=#16A34A;" vertex="1" parent="1">
+          <mxGeometry x="680" y="68" width="200" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Pool Box -->
+        <mxCell id="pool_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;strokeWidth=2;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="575" y="95" width="180" height="190" as="geometry"/>
+        </mxCell>
+        <mxCell id="pool_label" value="GraalContextPool&#xa;(ArrayBlockingQueue, size=10)&#xa;shared Engine" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=9;fontColor=#16A34A;" vertex="1" parent="1">
+          <mxGeometry x="580" y="100" width="170" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Pool contexts -->
+        <mxCell id="ctx1" value="Context 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#86EFAC;strokeColor=#16A34A;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="145" width="70" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx2" value="Context 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#86EFAC;strokeColor=#16A34A;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="670" y="145" width="70" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx3" value="Context 3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#86EFAC;strokeColor=#16A34A;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="180" width="70" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx4" value="..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#86EFAC;strokeColor=#16A34A;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="670" y="180" width="70" height="28" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx5" value="Context 10" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#86EFAC;strokeColor=#16A34A;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="620" y="215" width="80" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- New: Request arrows -->
+        <mxCell id="new_req1" value="Запрос 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#86EFAC;strokeColor=#16A34A;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="100" width="80" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="new_step1" value="acquire()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="140" width="80" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="new_step2" value="eval(js)&#xa;10ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#86EFAC;strokeColor=#16A34A;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="175" width="80" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="new_step3" value="release()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="215" width="80" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="new_step4" value="→ Context возвращается&#xa;в пул для следующего&#xa;запроса" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="790" y="250" width="130" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- New arrows -->
+        <mxCell id="new_a1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#16A34A;" edge="1" source="pool_box" target="new_step1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="new_a1l" value="acquire()" style="edgeLabel;html=1;align=center;fontSize=8;fontColor=#16A34A;" vertex="1" connectable="0" parent="new_a1"><mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+        <mxCell id="new_a2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#16A34A;" edge="1" source="new_step1" target="new_step2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="new_a3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#16A34A;" edge="1" source="new_step2" target="new_step3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="new_a4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1;strokeColor=#16A34A;dashed=1;" edge="1" source="new_step3" target="pool_box" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="new_a4l" value="release()" style="edgeLabel;html=1;align=center;fontSize=8;fontColor=#16A34A;" vertex="1" connectable="0" parent="new_a4"><mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry></mxCell>
+
+        <!-- New total -->
+        <mxCell id="new_total" value="Итого: ~10ms на запрос (без инициализации)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=11;fontColor=#16A34A;" vertex="1" parent="1">
+          <mxGeometry x="600" y="265" width="350" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Bottom: Comparison -->
+        <mxCell id="comp_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#E2E8F0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="320" width="1040" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="comp_title" value="Сравнение результатов (500 VU, mixed workload)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=13;fontColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="350" y="328" width="350" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Metrics -->
+        <mxCell id="m1_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#FECACA;" vertex="1" parent="1">
+          <mxGeometry x="50" y="355" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="m1_label" value="ScriptEngine" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=10;fontColor=#DC2626;" vertex="1" parent="1">
+          <mxGeometry x="50" y="358" width="150" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="m1_val" value="avg = 486ms&#xa;p95 = 733ms" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontColor=#991B1B;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="375" width="150" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m2_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#BBF7D0;" vertex="1" parent="1">
+          <mxGeometry x="230" y="355" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="m2_label" value="GraalVM Pool" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=10;fontColor=#16A34A;" vertex="1" parent="1">
+          <mxGeometry x="230" y="358" width="150" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="m2_val" value="avg = 169ms&#xa;p95 = 195ms" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontColor=#166534;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="230" y="375" width="150" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m3_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#BFDBFE;" vertex="1" parent="1">
+          <mxGeometry x="410" y="355" width="120" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="m3_label" value="Ускорение" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=10;fontColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="410" y="358" width="120" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="m3_val" value="2.9x faster" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=14;fontColor=#1D4ED8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="410" y="375" width="120" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m4_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#FECACA;" vertex="1" parent="1">
+          <mxGeometry x="570" y="355" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="m4_label" value="ScriptEngine (steady)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=10;fontColor=#DC2626;" vertex="1" parent="1">
+          <mxGeometry x="570" y="358" width="150" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="m4_val" value="avg = 374ms&#xa;16% ошибок" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontColor=#991B1B;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="570" y="375" width="150" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m5_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#BBF7D0;" vertex="1" parent="1">
+          <mxGeometry x="750" y="355" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="m5_label" value="GraalVM Pool (steady)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=10;fontColor=#16A34A;" vertex="1" parent="1">
+          <mxGeometry x="750" y="358" width="150" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="m5_val" value="avg = 16.6ms&#xa;0% ошибок" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontColor=#166534;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="750" y="375" width="150" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="m6_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#BFDBFE;" vertex="1" parent="1">
+          <mxGeometry x="930" y="355" width="120" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="m6_label" value="Ускорение" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=10;fontColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="930" y="358" width="120" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="m6_val" value="22.5x faster" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=14;fontColor=#1D4ED8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="930" y="375" width="120" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Code reference -->
+        <mxCell id="code_ref" value="GraalContextPool.java:53  acquire() → pool.poll(30, SECONDS)&#xa;GraalContextPool.java:64  release() → очистка bindings + возврат в пул" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontColor=#64748B;fontFamily=monospace;" vertex="1" parent="1">
+          <mxGeometry x="30" y="435" width="500" height="30" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

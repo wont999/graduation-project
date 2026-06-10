@@ -13,8 +13,8 @@ export const options = {
             executor: 'ramping-vus',
             startVUs: 0,
             stages: [
-                { duration: '10s', target: 250 },
-                { duration: '30s', target: 250 },
+                { duration: '10s', target: 300 },
+                { duration: '30s', target: 300 },
                 { duration: '5s', target: 0 },
             ],
         },
@@ -25,7 +25,7 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:8180/routing';
 const KEYCLOAK_URL = 'http://localhost:8080/realms/appliner/protocol/openid-connect/token';
 const CLIENT_SECRET = 'kZwCo8x0OioQvjmkXD9aY8FtYgJ6Z5Zs';
 
-const SCRIPT = `DB.query('SELECT pg_sleep(3), * FROM tenant_appliner.products LIMIT 10')`;
+const SCRIPT = `DB.query('SELECT pg_sleep(3), id FROM tenant_appliner.products LIMIT 10')`;
 
 export function setup() {
     const res = http.post(KEYCLOAK_URL, {

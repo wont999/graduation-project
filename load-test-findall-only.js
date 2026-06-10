@@ -66,7 +66,7 @@ export function setup() {
     const res = http.post(KEYCLOAK_URL, {
         grant_type: 'password',
         client_id: 'gateway-client',
-        client_secret: 'sUTYSTdef4d9h8STvcbAJkbwtIClrLe7',
+        client_secret: 'kZwCo8x0OioQvjmkXD9aY8FtYgJ6Z5Zs',
         username: 'testuser',
         password: 'testpass',
     }, {

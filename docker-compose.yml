@@ -30,7 +30,7 @@ services:
       - "-c"
       - "effective_cache_size=1GB"
       - "-c"
-      - "synchronous_commit=off"
+      - "synchronous_commit=on"
       - "-c"
       - "commit_delay=100000"
     ports:

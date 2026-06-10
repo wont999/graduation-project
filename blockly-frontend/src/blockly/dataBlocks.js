@@ -237,6 +237,127 @@ function registerConditionBlocks() {
         const val = block.getFieldValue('VALUE')
         return [`'${val}'`, javascriptGenerator.ORDER_ATOMIC]
     }
+
+    // === Блоки для работы с массивами ===
+
+    // array_length: длина массива
+    Blockly.Blocks['array_length'] = {
+        init: function () {
+            this.appendValueInput('ARRAY')
+                .setCheck('Array')
+                .appendField('длина массива')
+            this.setOutput(true, 'Number')
+            this.setColour(160)
+            this.setTooltip('Количество элементов в массиве')
+        }
+    }
+    javascriptGenerator.forBlock['array_length'] = function (block, generator) {
+        const arr = generator.valueToCode(block, 'ARRAY', javascriptGenerator.ORDER_ATOMIC) || '[]'
+        return [`${arr}.length`, javascriptGenerator.ORDER_ATOMIC]
+    }
+
+    // array_get: элемент по индексу
+    Blockly.Blocks['array_get'] = {
+        init: function () {
+            this.appendValueInput('ARRAY')
+                .setCheck('Array')
+                .appendField('элемент')
+            this.appendValueInput('INDEX')
+                .setCheck('Number')
+                .appendField('по индексу')
+            this.setOutput(true)
+            this.setColour(160)
+            this.setTooltip('Получить элемент массива по индексу (начиная с 0)')
+        }
+    }
+    javascriptGenerator.forBlock['array_get'] = function (block, generator) {
+        const arr = generator.valueToCode(block, 'ARRAY', javascriptGenerator.ORDER_ATOMIC) || '[]'
+        const idx = generator.valueToCode(block, 'INDEX', javascriptGenerator.ORDER_ATOMIC) || '0'
+        return [`${arr}[${idx}]`, javascriptGenerator.ORDER_ATOMIC]
+    }
+
+    // array_forEach: цикл по массиву
+    Blockly.Blocks['array_forEach'] = {
+        init: function () {
+            this.appendValueInput('ARRAY')
+                .setCheck('Array')
+                .appendField('для каждого элемента')
+            this.appendDummyInput()
+                .appendField('в переменной')
+                .appendField(new Blockly.FieldTextInput('item'), 'VAR')
+            this.appendStatementInput('DO')
+                .appendField('выполнить')
+            this.setPreviousStatement(true, null)
+            this.setNextStatement(true, null)
+            this.setColour(160)
+            this.setTooltip('Выполнить действия для каждого элемента массива')
+        }
+    }
+    javascriptGenerator.forBlock['array_forEach'] = function (block, generator) {
+        const arr = generator.valueToCode(block, 'ARRAY', javascriptGenerator.ORDER_ATOMIC) || '[]'
+        const varName = block.getFieldValue('VAR') || 'el'
+        const body = generator.statementToCode(block, 'DO')
+        return `for (var _idx = 0; _idx < ${arr}.length; _idx++) {\nvar ${varName} = ${arr}[_idx];\n${body}}\n`
+    }
+
+    // array_push: добавить в массив (создаёт новый)
+    Blockly.Blocks['array_filter'] = {
+        init: function () {
+            this.appendValueInput('ARRAY')
+                .setCheck('Array')
+                .appendField('отфильтровать')
+            this.appendValueInput('COND')
+                .setCheck('Boolean')
+                .appendField('где')
+            this.setOutput(true, 'Array')
+            this.setColour(160)
+            this.setTooltip('Создать новый массив с элементами, удовлетворяющими условию')
+        }
+    }
+    javascriptGenerator.forBlock['array_filter'] = function (block, generator) {
+        const arr = generator.valueToCode(block, 'ARRAY', javascriptGenerator.ORDER_ATOMIC) || '[]'
+        const cond = generator.valueToCode(block, 'COND', javascriptGenerator.ORDER_ATOMIC) || 'true'
+        return [`${arr}.filter(function(item){ return ${cond}; })`, javascriptGenerator.ORDER_ATOMIC]
+    }
+
+    // array_map: преобразовать массив
+    Blockly.Blocks['array_map'] = {
+        init: function () {
+            this.appendValueInput('ARRAY')
+                .setCheck('Array')
+                .appendField('преобразовать')
+            this.appendValueInput('EXPR')
+                .appendField('каждый в')
+            this.setOutput(true, 'Array')
+            this.setColour(160)
+            this.setTooltip('Создать новый массив, преобразуя каждый элемент')
+        }
+    }
+    javascriptGenerator.forBlock['array_map'] = function (block, generator) {
+        const arr = generator.valueToCode(block, 'ARRAY', javascriptGenerator.ORDER_ATOMIC) || '[]'
+        const expr = generator.valueToCode(block, 'EXPR', javascriptGenerator.ORDER_ATOMIC) || 'item'
+        return [`${arr}.map(function(item){ return ${expr}; })`, javascriptGenerator.ORDER_ATOMIC]
+    }
+
+    // array_sum: сумма элементов
+    Blockly.Blocks['array_sum'] = {
+        init: function () {
+            this.appendValueInput('ARRAY')
+                .setCheck('Array')
+                .appendField('сумма')
+            this.appendDummyInput()
+                .appendField('поле')
+                .appendField(new Blockly.FieldTextInput('price'), 'FIELD')
+            this.setOutput(true, 'Number')
+            this.setColour(160)
+            this.setTooltip('Сумма значений поля у всех элементов массива')
+        }
+    }
+    javascriptGenerator.forBlock['array_sum'] = function (block, generator) {
+        const arr = generator.valueToCode(block, 'ARRAY', javascriptGenerator.ORDER_ATOMIC) || '[]'
+        const field = block.getFieldValue('FIELD') || 'price'
+        return [`${arr}.reduce(function(s, item){ return s + (item.${field} || 0); }, 0)`, javascriptGenerator.ORDER_ATOMIC]
+    }
 }
 
 function createTableCategories(tableData) {
@@ -260,7 +381,7 @@ function createTableCategories(tableData) {
             }
         }
         javascriptGenerator.forBlock[selectAllType] = function () {
-            return [`DB.table('${tableName}').findAll()`, javascriptGenerator.ORDER_ATOMIC]
+            return [`__toArr.toArray(DB.table('${tableName}').findAll())`, javascriptGenerator.ORDER_ATOMIC]
         }
         blockDefs.push({ kind: 'block', type: selectAllType })
 
@@ -280,7 +401,7 @@ function createTableCategories(tableData) {
         }
         javascriptGenerator.forBlock[selectWhereType] = function (block, generator) {
             const cond = generator.valueToCode(block, 'COND', javascriptGenerator.ORDER_ATOMIC) || '{}'
-            return [`DB.table('${tableName}').where(${cond})`, javascriptGenerator.ORDER_ATOMIC]
+            return [`__toArr.toArray(DB.table('${tableName}').where(${cond}))`, javascriptGenerator.ORDER_ATOMIC]
         }
         blockDefs.push({ kind: 'block', type: selectWhereType })
 
@@ -461,7 +582,6 @@ function createTableCategories(tableData) {
                     { kind: 'block', type: 'data_where_params' },
                     { kind: 'block', type: 'data_column' },
                     { kind: 'block', type: 'data_value' },
-                    { kind: 'block', type: 'data_join' },
                 ],
             },
             ...subcategories,

@@ -107,7 +107,8 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -115,82 +116,115 @@ onMounted(() => {
 }
 
 .dialog {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  padding: 28px;
   min-width: 420px;
-  max-width: 560px;
+  max-width: 520px;
   max-height: 80vh;
   overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--gray-100);
 }
 
 .dialog h3 {
-  margin: 0 0 16px 0;
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--gray-800);
 }
 
 .dialog-content label {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-size: 13px;
-  color: #555;
+  font-weight: 500;
+  color: var(--gray-600);
 }
 
 .dialog-content input {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
   font-size: 14px;
   box-sizing: border-box;
+  transition: all var(--transition);
+  background: var(--gray-50);
+}
+
+.dialog-content input:focus {
+  outline: none;
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: white;
 }
 
 .dialog-actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 .dialog-actions button {
-  padding: 8px 16px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition);
 }
 
 .btn-save {
-  background: #0078D7;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
   color: white;
-  border-color: #0078D7;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.btn-save:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
 }
 
 .btn-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-cancel {
-  background: #f5f5f5;
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.btn-cancel:hover {
+  background: var(--gray-200);
 }
 
 .btn-load {
-  background: #0078D7;
+  background: var(--primary-500);
   color: white;
-  border: none;
-  padding: 4px 12px;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-load:hover {
+  background: var(--primary-600);
 }
 
 .btn-delete {
-  background: #d32f2f;
+  background: var(--error);
   color: white;
-  border: none;
-  padding: 4px 12px;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-delete:hover {
+  background: #DC2626;
 }
 
 .procedure-list {
@@ -202,17 +236,27 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.procedure-item:last-child {
+  border-bottom: none;
 }
 
 .procedure-info {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+.procedure-info strong {
+  font-size: 14px;
+  color: var(--gray-700);
 }
 
 .procedure-info small {
-  color: #888;
+  color: var(--gray-400);
   font-size: 12px;
 }
 
@@ -223,7 +267,8 @@ onMounted(() => {
 
 .loading, .empty {
   text-align: center;
-  padding: 24px;
-  color: #888;
+  padding: 32px;
+  color: var(--gray-400);
+  font-size: 14px;
 }
 </style>
