@@ -21,7 +21,6 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@EnableAsync(proxyTargetClass = true)
 public class JavaScriptExecutorService implements ScriptExecutionService {
 
 
@@ -135,25 +134,17 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
 
 
     @Override
-    public boolean validateScript(String script) {
+    public String validateScript(String script) {
         Context context = null;
         try {
             context = contextPool.acquire();
             context.parse("js", script);
-            return true;
+            return null;
         } catch (Exception e) {
             log.error("Script validation failed: {}", e.getMessage());
-            return false;
+            return e.getMessage();
         } finally {
             contextPool.release(context);
         }
-    }
-
-    private String preview(Object obj, int max) {
-        if (obj == null) {
-            return null;
-        }
-        String str = String.valueOf(obj);
-        return str.length() > max ? str.substring(0, max) : str;
     }
 }

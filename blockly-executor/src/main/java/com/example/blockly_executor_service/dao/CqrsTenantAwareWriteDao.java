@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CqrsTenantAwareWriteDao {
 
-    private static final Pattern VALID_IDENTIFIER = Pattern.compile("^[a-zA-Z0-9_-]+$");
     private static final Pattern VALID_COLUMN_NAME = Pattern.compile("^[a-zA-Z0-9_]+$");
 
     private final String tenantId;

@@ -24,7 +24,7 @@ public class CqrsDatabaseAccessor {
         return new CqrsTenantAwareDao(tenantId, tableName, readJdbcTemplate, writeJdbcTemplate, meterRegistry);
     }
 
-    @HostAccess.Export
+
     public Object query(String sql, Object... params) {
         log.debug("Executing READ query: {} (tenant: {})", sql, tenantId);
 
@@ -36,6 +36,7 @@ public class CqrsDatabaseAccessor {
         // Автоматически добавляем фильтр по tenant_id если его нет
         if (!sql.toLowerCase().contains("tenant_id")) {
             log.warn("Query without tenant_id filter: {}", sql);
+            //TODO: добавляем фильтр по tenant_id если его нет
         }
 
         //READ connection

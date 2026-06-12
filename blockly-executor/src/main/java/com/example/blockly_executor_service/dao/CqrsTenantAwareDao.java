@@ -4,12 +4,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.jdbc.core.JdbcTemplate;
+import java.util.regex.Pattern;
 
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
 public class CqrsTenantAwareDao {
+    private static final Pattern VALID_IDENTIFIER = Pattern.compile("^[a-zA-Z0-9_]+$");
 
     private final String fullyQualifiedTableName;
     private volatile CqrsTenantAwareReadDao readDao;
@@ -25,6 +27,12 @@ public class CqrsTenantAwareDao {
                               JdbcTemplate readJdbcTemplate,
                               JdbcTemplate writeJdbcTemplate,
                               MeterRegistry meterRegistry) {
+        if (tenantId == null || !VALID_IDENTIFIER.matcher(tenantId).matches()) {
+            throw new SecurityException("Invalid tenantId: " + tenantId);
+        }
+        if (tableName == null || !VALID_IDENTIFIER.matcher(tableName).matches()) {
+            throw new SecurityException("Invalid tableName: " + tableName);
+        }
         this.tenantId = tenantId;
         this.tableName = tableName;
         this.readJdbcTemplate = readJdbcTemplate;

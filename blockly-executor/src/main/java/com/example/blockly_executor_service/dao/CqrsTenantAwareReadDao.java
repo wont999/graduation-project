@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CqrsTenantAwareReadDao {
 
-    private static final Pattern VALID_IDENTIFIER = Pattern.compile("^[a-zA-Z0-9_-]+$");
     private static final Pattern VALID_COLUMN_NAME = Pattern.compile("^[a-zA-Z0-9_]+$");
 
     private final String tenantId;
@@ -285,7 +284,7 @@ public class CqrsTenantAwareReadDao {
     }
 
 
-    @HostAccess.Export
+
     public Object executeRawQuery(String sql, Object... params) {
         log.debug("Executing READ query: {} (tenant: {})", sql, tenantId);
         if (!sql.trim().toUpperCase().startsWith("SELECT")) {

@@ -11,3 +11,6 @@ databaseChangeLog:
   - include:
       file: changes/004-create-saved-procedures.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/005-create-processed-request-table.yaml
+      relativeToChangelogFile: true

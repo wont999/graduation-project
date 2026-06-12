@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-processed-request-table
+      author: diploma
+      changes:
+        - createTable:
+            tableName: processed_request
+            columns:
+              - column:
+                  name: request_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: 'IN_PROGRESS'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: response_json
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: processed_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false

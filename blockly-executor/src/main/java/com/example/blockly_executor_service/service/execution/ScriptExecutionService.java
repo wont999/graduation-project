@@ -5,6 +5,6 @@ import com.example.blockly_executor_service.model.dto.ExecutionResult;
 
 public interface ScriptExecutionService {
     ExecutionResult executeScript(ExecutionRequest request);
-    boolean validateScript(String script);
+    String validateScript(String script);
 
 }

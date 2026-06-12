@@ -2,16 +2,18 @@ package com.example.blockly_executor_service.service.worker;
 
 import com.example.common.ProcedureExecutor;
 import com.example.common.exception.ProcedureExecutionException;
+import com.example.common.exception.RequestCapacityExceededException;
 import com.example.common.mapper.ProcedureMapper;
 import com.example.common.model.ProcedurePayload;
 import com.example.common.model.ProcedureResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.ParameterizedType;
@@ -23,7 +25,6 @@ import static com.example.common.exception.ExceptionMessages.PROCEDURE_NOT_FOUND
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class BlocklyProcedureWorkerService {
 
     final Map<String, ProcedureExecutor<?, ?>> procedures;
@@ -31,9 +32,25 @@ public class BlocklyProcedureWorkerService {
     final KafkaTemplate<String, ProcedureResponse<?>> responseKafkaTemplate;
     final ProcedureMapper procedureMapper;
     final MeterRegistry meterRegistry;
+    final ProcedureProcessingService processingService;
+
+    public BlocklyProcedureWorkerService(
+            Map<String, ProcedureExecutor<?, ?>> procedures,
+            ObjectMapper objectMapper,
+            KafkaTemplate<String, ProcedureResponse<?>> responseKafkaTemplate,
+            ProcedureMapper procedureMapper,
+            MeterRegistry meterRegistry,
+            @Lazy ProcedureProcessingService processingService) {
+        this.procedures = procedures;
+        this.objectMapper = objectMapper;
+        this.responseKafkaTemplate = responseKafkaTemplate;
+        this.procedureMapper = procedureMapper;
+        this.meterRegistry = meterRegistry;
+        this.processingService = processingService;
+    }
 
     @KafkaListener(topics = "blockly-executor-procedures", groupId = "worker-blockly-executor", containerFactory = "blocklyKafkaListenerContainerFactory")
-    public void handleBlocklyProcedure(ProcedurePayload<?> request) {
+    public void handleBlocklyProcedure(ProcedurePayload<?> request, Acknowledgment ack) {
         Timer.builder("blockly_listener_total")
                 .publishPercentileHistogram()
                 .register(meterRegistry)
@@ -48,12 +65,20 @@ public class BlocklyProcedureWorkerService {
                                 .register(meterRegistry)
                                 .record(Duration.ofMillis(queueingMs));
 
-                        ProcedureResponse<?> response = executeProcedure(request);
+                        ProcedureResponse<?> response = processingService.process(request);
                         sendResponse(request.replyTo(), request.requestId(), response);
+                    } catch (IllegalStateException retryable) {
+                        log.warn("Deferring requestId {}: {}", request.requestId(), retryable.getMessage());
+                    } catch (RequestCapacityExceededException e) {
+                        log.warn("GraalVM pool exhausted for requestId: {}", request.requestId());
+                        ProcedureResponse<?> errorResponse = procedureMapper.toResponseError(request, "POOL_BUSY: " + e.getMessage());
+                        sendResponse(request.replyTo(), request.requestId(), errorResponse);
                     } catch (Exception e) {
                         log.error("Error processing procedure: {}", e.getMessage(), e);
                         ProcedureResponse<?> errorResponse = procedureMapper.toResponseError(request, e.getMessage());
                         sendResponse(request.replyTo(), request.requestId(), errorResponse);
+                    }   finally {
+                        ack.acknowledge(); 
                     }
                 });
     }
@@ -68,7 +93,7 @@ public class BlocklyProcedureWorkerService {
             Map<String, Object> paramsMap = (Map<String, Object>) params;
 
             paramsMap.put("__metadata", request.metadata());
-            paramsMap.put("__requestId", request.requestId().toString());
+            paramsMap.put("requestId", request.requestId().toString());
 
             log.debug("Added execution metadata for userId: {}", request.metadata().userId());
         }

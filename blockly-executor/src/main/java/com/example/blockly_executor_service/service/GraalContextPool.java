@@ -1,5 +1,7 @@
 package com.example.blockly_executor_service.service;
 
+import com.example.common.exception.ExceptionMessages;
+import com.example.common.exception.RequestCapacityExceededException;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
@@ -56,7 +58,8 @@ public class GraalContextPool {
         }
         Context ctx = pool.poll(30, TimeUnit.SECONDS);
         if (ctx == null) {
-            throw new IllegalStateException("No GraalVM context available within 30s (pool exhausted)");
+            throw new RequestCapacityExceededException(
+                    String.format(ExceptionMessages.REQUEST_CAPACITY_EXCEEDED, size));
         }
         return ctx;
     }
