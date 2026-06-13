@@ -1,8 +1,12 @@
 databaseChangeLog:
   - changeSet:
-      id: 005-create-processed-request-table
-      author: diploma
+      id: 005-drop-and-recreate-processed-request
+      author: developer
+      context: dev
+      valid: true
       changes:
+        - sql:
+            sql: DROP TABLE IF EXISTS processed_request
         - createTable:
             tableName: processed_request
             columns:

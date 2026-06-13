@@ -18,11 +18,13 @@ import org.graalvm.polyglot.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
 public class JavaScriptExecutorService implements ScriptExecutionService {
 
+    private static final Pattern WRITE_CALL = Pattern.compile("\\.(create|update|delete)\\s*\\(");
 
     private final JdbcTemplate writeJdbcTemplate;
     private final JdbcTemplate readJdbcTemplate;
@@ -49,6 +51,9 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             throw new SecurityException("Tenant ID is required but not provided");
         }
 
+        boolean mutating = isMutating(request.getScript());
+        JdbcTemplate readTemplate = mutating ? writeJdbcTemplate : readJdbcTemplate;
+
         log.info("Executing script for tenant: {}", tenantId);
         Context context = null;
         try{
@@ -57,8 +62,8 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             // Создаем DatabaseAccessor для доступа к БД с изоляцией по tenant
             CqrsDatabaseAccessor dbAccessor = new CqrsDatabaseAccessor(
                     tenantId,
-                    readJdbcTemplate,
-                    writeJdbcTemplate,
+                    readTemplate, // read-путь: мастер при записи, иначе реплика
+                    writeJdbcTemplate, // write-путь: всегда мастер
                     meterRegistry
             );
             Value bindings = context.getBindings("js");
@@ -146,5 +151,10 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
         } finally {
             contextPool.release(context);
         }
+    }
+
+    // true, если скрипт содержит операции записи -> читать тоже с мастера
+    private boolean isMutating(String script) {
+        return script != null && WRITE_CALL.matcher(script).find();
     }
 }

@@ -67,18 +67,24 @@ public class BlocklyProcedureWorkerService {
 
                         ProcedureResponse<?> response = processingService.process(request);
                         sendResponse(request.replyTo(), request.requestId(), response);
+                        ack.acknowledge(); // успех - коммитим offset
                     } catch (IllegalStateException retryable) {
+                        // запись занята другим потоком/инстансом - НЕ ack, переобработаем позже
                         log.warn("Deferring requestId {}: {}", request.requestId(), retryable.getMessage());
+                        ack.nack(Duration.ofMillis(500));        // seek назад + пауза, без коммита offset
                     } catch (RequestCapacityExceededException e) {
+                        // пул занят - отдаём POOL_BUSY клиенту и коммитим (повтор не нужен)
                         log.warn("GraalVM pool exhausted for requestId: {}", request.requestId());
                         ProcedureResponse<?> errorResponse = procedureMapper.toResponseError(request, "POOL_BUSY: " + e.getMessage());
                         sendResponse(request.replyTo(), request.requestId(), errorResponse);
+                        ack.acknowledge();
                     } catch (Exception e) {
+                        // финальная ошибка выполнения: FAILED уже зафиксирован в process(),
+                        // отдаём ошибку клиенту и коммитим, чтобы не зацикливать
                         log.error("Error processing procedure: {}", e.getMessage(), e);
                         ProcedureResponse<?> errorResponse = procedureMapper.toResponseError(request, e.getMessage());
                         sendResponse(request.replyTo(), request.requestId(), errorResponse);
-                    }   finally {
-                        ack.acknowledge(); 
+                        ack.acknowledge();
                     }
                 });
     }

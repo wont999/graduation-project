@@ -122,14 +122,20 @@ const SCRIPTS = [
         })()`
     },
 
-    // S4: SQL + DB API комбинация: подсчёт записей + запрос с GROUP BY
+    // S4: Подсчёт записей + распределение по ценовым категориям (JS)
     {
         weight: 15,
         script: `(function(){
             var total = DB.table('products').count();
-            var raw = DB.query('SELECT CASE WHEN price < 100 THEN \'cheap\' WHEN price < 500 THEN \'mid\' ELSE \'expensive\' END as tier, COUNT(*) as cnt FROM tenant_appliner.products GROUP BY tier ORDER BY cnt DESC');
-            var groups = __toArr.toArray(raw);
-            return {total: total, tiers: groups};
+            var raw = DB.table('products').where({price: {op: '>', value: 0}, __limit: 1000});
+            var items = __toArr.toArray(raw);
+            var tiers = {cheap: 0, mid: 0, expensive: 0};
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].price < 100) tiers.cheap++;
+                else if (items[i].price < 500) tiers.mid++;
+                else tiers.expensive++;
+            }
+            return {total: total, tiers: tiers};
         })()`
     },
 
@@ -195,17 +201,26 @@ const SCRIPTS = [
         })()`
     },
 
-    // S9: SQL + JS-обработка: MIN/MAX/AVG + распределение по бакетам
+    // S9: Статистика + распределение по бакетам (JS)
     {
         weight: 10,
         script: `(function(){
-            var rawStats = DB.query('SELECT MIN(price) as min_price, MAX(price) as max_price, AVG(price)::int as avg_price FROM tenant_appliner.products WHERE price > 0');
-            var statsArr = __toArr.toArray(rawStats);
-            var s = statsArr[0];
-            var range = s.max_price - s.min_price;
-            var rawBuckets = DB.query('SELECT (price / 100) * 100 as bucket, COUNT(*) as cnt FROM tenant_appliner.products WHERE price > 0 GROUP BY bucket ORDER BY bucket');
-            var buckets = __toArr.toArray(rawBuckets);
-            return {range: range, stats: s, distribution: buckets};
+            var raw = DB.table('products').where({price: {op: '>', value: 0}, __limit: 1000});
+            var items = __toArr.toArray(raw);
+            var min = 999999, max = 0, sum = 0;
+            var buckets = {};
+            for (var i = 0; i < items.length; i++) {
+                var p = items[i].price;
+                if (p < min) min = p;
+                if (p > max) max = p;
+                sum += p;
+                var b = Math.floor(p / 100) * 100;
+                buckets[b] = (buckets[b] || 0) + 1;
+            }
+            var dist = [];
+            for (var k in buckets) dist.push({bucket: Number(k), cnt: buckets[k]});
+            dist.sort(function(a,b){return a.bucket - b.bucket;});
+            return {min: min, max: max, avg: items.length > 0 ? Math.round(sum / items.length) : 0, range: max - min, distribution: dist};
         })()`
     },
 
@@ -216,7 +231,7 @@ const SCRIPTS = [
             var rawAll = DB.table('products').findAll();
             var all = __toArr.toArray(rawAll);
             var total = DB.table('products').count();
-            DB.table('products').create({name: 'load-vu-' + __VU + '-' + Date.now(), price: Math.floor(Math.random() * 500) + 1});
+            DB.table('products').create({name: 'load-vu-' + Date.now() + '-' + Math.floor(Math.random() * 100000), price: Math.floor(Math.random() * 500) + 1});
             var rawLast = DB.table('products').where({name: {op: 'like', value: '%load-vu-%'}, __limit: 5});
             var last = __toArr.toArray(rawLast);
             if (last.length > 0) {
