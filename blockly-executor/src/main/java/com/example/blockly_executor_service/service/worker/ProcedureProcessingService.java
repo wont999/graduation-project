@@ -25,6 +25,7 @@ public class ProcedureProcessingService {
     private final ObjectMapper objectMapper;
     private final ProcedureProcessingService self; // для вызова @Transactional через прокси
     private static final Pattern WRITE_CALL = Pattern.compile("\\.(create|update|delete)\\s*\\(");
+    private static final Pattern TABLE_REF = Pattern.compile("\\.table\\(\\s*['\"]([a-zA-Z0-9_]+)['\"]\\s*\\)");
 
     public ProcedureProcessingService(
             @Qualifier("writeJdbcTemplate") JdbcTemplate writeJdbcTemplate,
@@ -44,13 +45,7 @@ public class ProcedureProcessingService {
      */
     public ProcedureResponse<?> process(ProcedurePayload<?> request) {
         // Извлекаем скрипт из параметров для проверки
-        String script = null;
-        if (request.parameters() instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> params = (Map<String, Object>) request.parameters();
-            Object s = params.get("script");
-            if (s instanceof String) script = (String) s;
-        }
+        String script = extractScript(request);
 
         // read-only: ни транзакции, ни dedup — повтор безопасен
         if (!isMutating(script)) {
@@ -79,6 +74,33 @@ public class ProcedureProcessingService {
         }
     }
 
+    private String extractScript(ProcedurePayload<?> request) {
+        if (request.parameters() instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> params = (Map<String, Object>) request.parameters();
+            Object s = params.get("script");
+            if (s instanceof String) return (String) s;
+        }
+        return null;
+    }
+
+    /** Извлечь имена таблиц, к которым обращался мутирующий скрипт. */
+    private java.util.Set<String> extractTables(String script) {
+        java.util.Set<String> tables = new java.util.HashSet<>();
+        if (script == null) return tables;
+        var m = TABLE_REF.matcher(script);
+        while (m.find()) tables.add(m.group(1));
+        return tables;
+    }
+
+    /** Записать TABLE_CHANGED в outbox. Вызывается ВНУТРИ транзакции executeAndMarkDone. */
+    private void writeOutbox(String tenantId, String tableName) {
+        writeJdbcTemplate.update(
+                "INSERT INTO outbox_event(tenant_id, event_type, payload) VALUES (?, ?, ?::jsonb)",
+                tenantId, "TABLE_CHANGED",
+                "{\"table\":\"" + tableName + "\"}");
+    }
+
     /** Короткая транзакция: занять requestId. true — заняли мы, false — уже существует. */
     @Transactional(transactionManager = "writeTransactionManager")
     public boolean tryClaim(UUID requestId) {
@@ -95,6 +117,14 @@ public class ProcedureProcessingService {
     @Transactional(transactionManager = "writeTransactionManager")
     public ProcedureResponse<?> executeAndMarkDone(ProcedurePayload<?> request) {
         ProcedureResponse<?> response = workerService.executeProcedure(request);
+
+        // outbox в той же транзакции -> атомарно с командой
+        String script = extractScript(request);
+        String tenantId = request.metadata().tenantId();
+        for (String table : extractTables(script)) {
+            writeOutbox(tenantId, table);
+        }
+
         writeJdbcTemplate.update(
                 "UPDATE processed_request SET status='DONE', response_json=?, processed_at=now() WHERE request_id=?",
                 serialize(response), request.requestId());

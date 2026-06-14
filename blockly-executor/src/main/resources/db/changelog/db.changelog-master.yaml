@@ -17,3 +17,6 @@ databaseChangeLog:
   - include:
       file: changes/006-add-processed-request-index.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/007-create-outbox-and-catalog.yaml
+      relativeToChangelogFile: true

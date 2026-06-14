@@ -1,7 +1,9 @@
 package com.example.blockly_executor_service.service.procedure;
 import com.example.common.ProcedureExecutor;
+import com.example.common.model.ExecutionMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -12,21 +14,18 @@ import java.util.Map;
 @Slf4j
 public class GetTablesProcedure implements ProcedureExecutor<Map<String, Object>, Object> {
 
+    @Qualifier("readJdbcTemplate")
     private final JdbcTemplate readJdbcTemplate;
 
     @Override
     public Object execute(Map<String, Object> parameters) {
-        String tenant = (String) parameters.get("tenant");
-        if (tenant == null || tenant.isEmpty()) {
-            throw new IllegalArgumentException("tenant parameter is required");
-        }
-        String schema = "tenant_" + tenant;
-        log.info("Fetching tables for schema: {}", schema);
+        ExecutionMetadata metadata = (ExecutionMetadata) parameters.get("__metadata");
+        String tenant = metadata.tenantId();
+
+        log.info("Getting tables for tenant: {}", tenant);
+
         return readJdbcTemplate.queryForList(
-                "SELECT table_name FROM information_schema.tables " +
-                        "WHERE table_schema = ? AND table_type = 'BASE TABLE' " +
-                        "ORDER BY table_name",
-                String.class, schema
-        );
+                "SELECT table_name, row_count, updated_at FROM table_catalog " +
+                        "WHERE tenant_id = ? ORDER BY table_name", tenant);
     }
 }

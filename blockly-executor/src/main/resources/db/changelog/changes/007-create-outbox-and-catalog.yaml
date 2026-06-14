@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-create-outbox-event
+      author: developer
+      changes:
+        - createTable:
+            tableName: outbox_event
+            columns:
+              - column: { name: id, type: BIGSERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: tenant_id, type: VARCHAR(64), constraints: { nullable: false } }
+              - column: { name: event_type, type: VARCHAR(100), constraints: { nullable: false } }
+              - column: { name: payload, type: jsonb, constraints: { nullable: false } }
+              - column: { name: published, type: BOOLEAN, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, defaultValueComputed: now(), constraints: { nullable: false } }
+        - sql:
+            sql: CREATE INDEX idx_outbox_unpublished ON outbox_event (id) WHERE published = false
+
+  - changeSet:
+      id: 007-create-table-catalog
+      author: developer
+      changes:
+        - createTable:
+            tableName: table_catalog
+            columns:
+              - column: { name: tenant_id, type: VARCHAR(64), constraints: { nullable: false } }
+              - column: { name: table_name, type: VARCHAR(255), constraints: { nullable: false } }
+              - column: { name: row_count, type: BIGINT }
+              - column: { name: updated_at, type: timestamptz, defaultValueComputed: now(), constraints: { nullable: false } }
+        - addPrimaryKey:
+            tableName: table_catalog
+            columnNames: tenant_id, table_name
+            constraintName: pk_table_catalog
