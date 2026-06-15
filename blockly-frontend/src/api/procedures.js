@@ -1,6 +1,13 @@
 import axios from 'axios'
 import { getKeycloakToken } from './auth'
 
+function authHeaders(token) {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+    }
+}
+
 export async function executeScript(script) {
     const token = await getKeycloakToken()
     const res = await axios.post(

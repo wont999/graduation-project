@@ -135,7 +135,7 @@ public class ProcedureGatewayService {
     public UUID submitProcedure(ProcedureRequestDto<?> requestDto, String userId, String organizationId) {
         // Если потребитель указал свой replyTo — используем его
         String replyTo = requestDto.replyTo() != null ? requestDto.replyTo() : instanceId;
-        var payload = procedureMapper.toPayload(requestDto, instanceId, userId, organizationId);
+        var payload = procedureMapper.toPayload(requestDto, replyTo, userId, organizationId);
 
         var targetTopic = clientTypeTopicMapper.getTopicForClientType(requestDto.clientType());
         log.info("Async submit procedure '{}' requestId: {}", requestDto.procedureName(), payload.requestId());
