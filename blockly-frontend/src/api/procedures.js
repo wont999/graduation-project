@@ -5,6 +5,8 @@ function authHeaders(token) {
     return {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
+        'X-User-Id': 'testuser',
+        'X-Organization-Id': 'appliner',
     }
 }
 

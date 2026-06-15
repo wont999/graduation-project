@@ -52,7 +52,11 @@ public class ProcedureProcessingService {
         // read-only: ни транзакции, ни dedup — повтор безопасен
         if (!isMutating(script)) {
             // read-only: дедуп не нужен, но статус для async-поллинга фиксируем
-            self.tryClaim(request.requestId(), tenantId, procedureName); // создаст IN_PROGRESS или вернёт false если уже есть
+            if (!self.tryClaim(request.requestId(), tenantId, procedureName)) {
+                ProcedureResponse<?> done = self.findResolved(request.requestId());
+                if (done != null) return done;
+                throw new IllegalStateException("Request " + request.requestId() + " in progress, will retry");
+            }
             try {
                 ProcedureResponse<?> response = workerService.executeProcedure(request);
                 self.markDoneStandalone(request.requestId(), response); // отдельная короткая транзакция
@@ -123,7 +127,8 @@ public class ProcedureProcessingService {
     @Transactional(transactionManager = "writeTransactionManager")
     public boolean tryClaim(UUID requestId, String tenantId, String procedureName) {
         return writeJdbcTemplate.update(
-                "INSERT INTO processed_request(request_id, status, tenant_id, procedure_name) VALUES (?, 'IN_PROGRESS', ?, ?) " +
+                "INSERT INTO processed_request(request_id, status, tenant_id, procedure_name, processed_at) " +
+                        "VALUES (?, 'IN_PROGRESS', ?, ?, now()) " +
                         "ON CONFLICT (request_id) DO NOTHING",
                 requestId, tenantId, procedureName) == 1;
     }
