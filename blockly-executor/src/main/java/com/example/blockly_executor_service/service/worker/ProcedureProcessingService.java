@@ -46,14 +46,25 @@ public class ProcedureProcessingService {
     public ProcedureResponse<?> process(ProcedurePayload<?> request) {
         // Извлекаем скрипт из параметров для проверки
         String script = extractScript(request);
+        String tenantId = request.metadata().tenantId();
+        String procedureName = request.procedureName();
 
         // read-only: ни транзакции, ни dedup — повтор безопасен
         if (!isMutating(script)) {
-            return workerService.executeProcedure(request);
+            // read-only: дедуп не нужен, но статус для async-поллинга фиксируем
+            self.tryClaim(request.requestId(), tenantId, procedureName); // создаст IN_PROGRESS или вернёт false если уже есть
+            try {
+                ProcedureResponse<?> response = workerService.executeProcedure(request);
+                self.markDoneStandalone(request.requestId(), response); // отдельная короткая транзакция
+                return response;
+            } catch (Exception e) {
+                self.markFailed(request.requestId(), e.getMessage());
+                throw e;
+            }
         }
 
         UUID requestId = request.requestId();
-        if (!self.tryClaim(requestId)) {
+        if (!self.tryClaim(request.requestId(), tenantId, procedureName)) {
             ProcedureResponse<?> done = self.findResolved(requestId);
             if (done != null) {
                 log.warn("Duplicate requestId {}, returning stored response", requestId);
@@ -72,6 +83,13 @@ public class ProcedureProcessingService {
             self.markFailed(requestId, e.getMessage());
             throw e;
         }
+    }
+
+    @Transactional(transactionManager = "writeTransactionManager")
+    public void markDoneStandalone(UUID requestId, ProcedureResponse<?> response) {
+        writeJdbcTemplate.update(
+                "UPDATE processed_request SET status='DONE', response_json=?, processed_at=now() WHERE request_id=?",
+                serialize(response), requestId);
     }
 
     private String extractScript(ProcedurePayload<?> request) {
@@ -103,11 +121,11 @@ public class ProcedureProcessingService {
 
     /** Короткая транзакция: занять requestId. true — заняли мы, false — уже существует. */
     @Transactional(transactionManager = "writeTransactionManager")
-    public boolean tryClaim(UUID requestId) {
+    public boolean tryClaim(UUID requestId, String tenantId, String procedureName) {
         return writeJdbcTemplate.update(
-                "INSERT INTO processed_request(request_id, status) VALUES (?, 'IN_PROGRESS') " +
+                "INSERT INTO processed_request(request_id, status, tenant_id, procedure_name) VALUES (?, 'IN_PROGRESS', ?, ?) " +
                         "ON CONFLICT (request_id) DO NOTHING",
-                requestId) == 1;
+                requestId, tenantId, procedureName) == 1;
     }
 
     /**

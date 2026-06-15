@@ -419,6 +419,7 @@ services:
       - app-network
     ports:
       - "8090:8086"
+      - "8085:8085"
     restart: unless-stopped
 
   blockly-executor-2:

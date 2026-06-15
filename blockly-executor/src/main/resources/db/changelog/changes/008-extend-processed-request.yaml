@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-extend-processed-request
+      author: diploma
+      changes:
+        - addColumn:
+            tableName: processed_request
+            columns:
+              - column: { name: tenant_id, type: VARCHAR(64) }
+              - column: { name: procedure_name, type: VARCHAR(255) }
+              - column: { name: created_at, type: timestamptz, defaultValueComputed: now() }

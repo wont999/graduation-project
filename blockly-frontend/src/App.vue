@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import BlocklyWorkspace from './components/BlocklyWorkspace.vue'
 import ResultPanel from './components/ResultPanel.vue'
 import SaveProcedureDialog from './components/SaveProcedureDialog.vue'
-import { executeScript } from './api/procedures'
+import { executeScriptAsync } from './api/procedures'
 import * as Blockly from 'blockly'
 import { javascriptGenerator } from 'blockly/javascript'
 
@@ -26,7 +26,7 @@ const handleExecute = async () => {
   result.value = null
   error.value = null
   try {
-    result.value = await executeScript(generatedCode.value)
+    result.value = await executeScriptAsync(generatedCode.value)
   } catch (err) {
     error.value = err
   } finally {

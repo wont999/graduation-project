@@ -18,6 +18,12 @@ spring:
                 - Path=/routing/**
               filters:
                 - StripPrefix=1
+            - id: executor-executions
+              uri: lb://blockly-executor
+              predicates:
+                - Path=/api/executions/**
+              filters:
+                - StripPrefix=0
   security:
     oauth2:
       resourceserver:
