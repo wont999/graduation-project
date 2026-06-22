@@ -1,17 +1,17 @@
 import axios from 'axios'
-import { getKeycloakToken } from './auth'
+import { getKeycloakToken, getTenantFromToken } from './auth'
 
 function authHeaders(token) {
     return {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'X-User-Id': 'testuser',
-        'X-Organization-Id': 'appliner',
+        'X-Organization-Id': getTenantFromToken(token),
     }
 }
 
 export async function executeScript(script) {
     const token = await getKeycloakToken()
+    const tenant = getTenantFromToken(token)
     const res = await axios.post(
         '/api/procedures/execute',
         {
@@ -26,8 +26,7 @@ export async function executeScript(script) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
-                'X-User-Id': 'testuser',
-                'X-Organization-Id': 'default',
+                'X-Organization-Id': tenant,
             },
             timeout: 60000,
         }

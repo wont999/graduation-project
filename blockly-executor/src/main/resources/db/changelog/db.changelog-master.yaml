@@ -2,9 +2,15 @@ databaseChangeLog:
   - include:
       file: db/changelog/changes/000-create-blockly-schema.yaml
   - include:
+      file: db/changelog/changes/000-create-tenant-schema.yaml
+  - include:
       file: db/changelog/changes/001-create-script-execution-log.yaml
   - include:
-      file: db/changelog/changes/002-create-ecommerce-tables.yaml
+      file: changes/002-create-ecommerce-tables.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/009-create-products-table.yaml
+      relativeToChangelogFile: true
   - include:
       file: changes/003-fix-products-table.yaml
       relativeToChangelogFile: true
@@ -22,4 +28,13 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changes/008-extend-processed-request.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/010-create-tenant-b-schema.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/012-seed-appliner-data.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/011-seed-table-catalog.yaml
       relativeToChangelogFile: true

@@ -4,6 +4,7 @@ import BlocklyWorkspace from './components/BlocklyWorkspace.vue'
 import ResultPanel from './components/ResultPanel.vue'
 import SaveProcedureDialog from './components/SaveProcedureDialog.vue'
 import { executeScriptAsync } from './api/procedures'
+import { logout } from './api/auth'
 import * as Blockly from 'blockly'
 import { javascriptGenerator } from 'blockly/javascript'
 
@@ -95,6 +96,16 @@ function onProcedureLoad(procedure) {
             Мои процедуры
           </button>
         </div>
+      </div>
+      <div class="header-right">
+        <button @click="logout" class="btn btn-logout">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16,17 21,12 16,7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Выйти
+        </button>
       </div>
     </header>
 
@@ -204,6 +215,11 @@ function onProcedureLoad(procedure) {
   gap: 8px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -253,6 +269,18 @@ function onProcedureLoad(procedure) {
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+}
+
+.btn-logout {
+  background: none;
+  color: var(--gray-500);
+  border: 1px solid var(--gray-200);
+}
+
+.btn-logout:hover {
+  color: #ef4444;
+  border-color: #fecaca;
+  background: #fef2f2;
 }
 
 .btn-loading {

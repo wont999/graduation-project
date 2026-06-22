@@ -1,0 +1,79 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-create-tenant-b-schema
+      author: developer
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS tenant_google
+        - createTable:
+            schemaName: tenant_google
+            tableName: books
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author
+                  type: VARCHAR(255)
+              - column:
+                  name: price
+                  type: NUMERIC(10,2)
+              - column:
+                  name: stock
+                  type: INT
+                  defaultValueNumeric: 0
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - createTable:
+            schemaName: tenant_google
+            tableName: authors
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: country
+                  type: VARCHAR(100)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - sql:
+            sql: |
+              INSERT INTO tenant_google.books (title, author, price, stock)
+              VALUES ('Война и мир', 'Толстой', 500, 10),
+                     ('Преступление и наказание', 'Достоевский', 350, 5),
+                     ('1984', 'Оруэлл', 400, 7),
+                     ('Мастер и Маргарита', 'Булгаков', 450, 3)
+        - sql:
+            sql: |
+              INSERT INTO tenant_google.authors (name, country)
+              VALUES ('Толстой', 'Россия'),
+                     ('Достоевский', 'Россия'),
+                     ('Оруэлл', 'Великобритания'),
+                     ('Булгаков', 'Россия')
+      rollback:
+        - dropTable:
+            schemaName: tenant_google
+            tableName: books
+        - dropTable:
+            schemaName: tenant_google
+            tableName: authors

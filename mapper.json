@@ -1,1 +1,0 @@
-{"name":"groups-mapper","protocol":"openid-connect","protocolMapper":"oidc-usermodel-group-mapper","config":{"multivalued":["true"],"claim.name":["groups"],"id.token.claim":["true"],"access.token.claim":["true"],"userinfo.token.claim":["true"],"full.path":["false"]}}

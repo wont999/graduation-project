@@ -1,10 +1,11 @@
 import axios from 'axios'
-import { getKeycloakToken } from './auth'
+import { getKeycloakToken, getTenantFromToken } from './auth'
 
 const API_BASE = '/api/procedures'
 
 async function callProcedure(procedureName, parameters = {}) {
     const token = await getKeycloakToken()
+    const tenant = getTenantFromToken(token)
     const res = await axios.post(
         `${API_BASE}/execute`,
         {
@@ -16,8 +17,7 @@ async function callProcedure(procedureName, parameters = {}) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
-                'X-User-Id': 'testuser',
-                'X-Organization-Id': 'appliner'
+                'X-Organization-Id': tenant
             }
         }
     )

@@ -57,7 +57,7 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
         log.info("Executing script for tenant: {}", tenantId);
         Context context = null;
         try{
-            context = contextPool.acquire();
+            context = contextPool.acquire();            
 
             // Создаем DatabaseAccessor для доступа к БД с изоляцией по tenant
             CqrsDatabaseAccessor dbAccessor = new CqrsDatabaseAccessor(
@@ -69,6 +69,10 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             Value bindings = context.getBindings("js");
             bindings.putMember("DB", dbAccessor);
             bindings.putMember("__toArr", new ToJSArray(context));
+
+            bindings.putMember("__procedureHelper", new ProcedureExecutorHelper(context, readTemplate, tenantId));
+            context.eval("js", "var executeProcedure = function(name) { return __procedureHelper.execute(name); }");
+
             if (request.getParams() != null) {
                 request.getParams().forEach(bindings::putMember);
             }

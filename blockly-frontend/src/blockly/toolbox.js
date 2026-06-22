@@ -133,6 +133,10 @@ export const toolbox = {
                 { kind: 'block', type: 'array_filter' },
                 { kind: 'block', type: 'array_map' },
                 { kind: 'block', type: 'array_sum' },
+                { kind: 'block', type: 'create_object' },
+                { kind: 'block', type: 'export_csv' },
+                { kind: 'block', type: 'export_json' },
+                { kind: 'block', type: 'export_xml' },
             ],
         },
 

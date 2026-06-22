@@ -2,7 +2,6 @@ databaseChangeLog:
   - changeSet:
       id: 005-drop-and-recreate-processed-request
       author: developer
-      context: dev
       valid: true
       changes:
         - sql:

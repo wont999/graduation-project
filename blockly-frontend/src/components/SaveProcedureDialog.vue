@@ -40,7 +40,7 @@
 </template>
 
 <script setup>
-import {ref, onMounted} from 'vue'
+import {ref, onMounted, watch} from 'vue'
 import {saveProcedure, fetchSavedProcedures, deleteSavedProcedure} from '../api/savedProcedures'
 
 const props = defineProps({
@@ -95,8 +95,10 @@ async function handleDelete(p) {
   }
 }
 
-onMounted(() => {
-  if (props.mode === 'list') loadProcedures()
+watch(() => props.visible, (newVal) => {
+  if (newVal && props.mode === 'list') {
+    loadProcedures()
+  }
 })
 </script>
 

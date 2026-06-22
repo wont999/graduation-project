@@ -1,17 +1,26 @@
-import axios from 'axios'
-
-const KEYCLOAK_URL = '/realms/appliner/protocol/openid-connect/token'
-
 export async function getKeycloakToken() {
-    const params = new URLSearchParams()
-    params.append('grant_type', 'password')
-    params.append('client_id', 'gateway-client')
-    params.append('client_secret', 'kZwCo8x0OioQvjmkXD9aY8FtYgJ6Z5Zs')
-    params.append('username', 'testuser')
-    params.append('password', 'testpass')
+    const kc = window.__keycloak
+    if (!kc || !kc.token) throw new Error('Not authenticated')
+    try {
+        await kc.updateToken(30)
+    } catch {
+        kc.login()
+        throw new Error('Token refresh failed')
+    }
+    return kc.token
+}
 
-    const res = await axios.post(KEYCLOAK_URL, params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    })
-    return res.data.access_token
+export function getTenantFromToken(token) {
+    if (!token) token = window.__keycloak?.token
+    if (!token) throw new Error('No token available to extract tenant')
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        if (payload.groups && payload.groups.length > 0) return payload.groups[0]
+    } catch {}
+    throw new Error('Tenant not found in token groups')
+}
+
+export function logout() {
+    const kc = window.__keycloak
+    if (kc) kc.logout({ redirectUri: window.location.origin })
 }
