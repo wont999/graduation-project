@@ -25,12 +25,12 @@ public class SavedProcedureService {
 
     private final RowMapper<Map<String, Object>> rowMapper = (rs, rowNum) -> Map.of(
             "id", rs.getLong("id"),
-            "tenantId", rs.getString("tenant_id"),
-            "name", rs.getString("name"),
-            "description", rs.getString("description"),
+            "tenantId", rs.getString("tenant_id") != null ? rs.getString("tenant_id") : "",
+            "name", rs.getString("name") != null ? rs.getString("name") : "",
+            "description", rs.getString("description") != null ? rs.getString("description") : "",
             "blocklyXml", rs.getString("blockly_xml") != null ? rs.getString("blockly_xml") : "",
             "generatedJs", rs.getString("generated_js") != null ? rs.getString("generated_js") : "",
-            "createdAt", rs.getTimestamp("created_at").toLocalDateTime().toString(),
+            "createdAt", rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime().toString() : "",
             "updatedAt", rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime().toString() : ""
     );
 
