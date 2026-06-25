@@ -130,4 +130,21 @@ public class ProcedureGatewayService {
             throw new TimeoutException(message);
         }
     }
+
+    /** Async submit: отправляет команду и сразу возвращает requestId, не дожидаясь результата. */
+    public UUID submitProcedure(ProcedureRequestDto<?> requestDto, String userId, String organizationId) {
+        // Если потребитель указал свой replyTo — используем его
+        String replyTo = requestDto.replyTo() != null ? requestDto.replyTo() : instanceId;
+        var payload = procedureMapper.toPayload(requestDto, replyTo, userId, organizationId);
+
+        var targetTopic = clientTypeTopicMapper.getTopicForClientType(requestDto.clientType());
+        log.info("Async submit procedure '{}' requestId: {}", requestDto.procedureName(), payload.requestId());
+
+        // статус читается из processed_request
+        kafkaTemplate.send(targetTopic, String.valueOf(payload.requestId()), payload)
+                .whenComplete((res, ex) -> {
+                    if (ex != null) log.error("Submit failed for {}: {}", payload.requestId(), ex.getMessage());
+                });
+        return payload.requestId();
+    }
 }

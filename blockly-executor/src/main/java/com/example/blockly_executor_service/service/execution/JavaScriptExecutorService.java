@@ -18,12 +18,13 @@ import org.graalvm.polyglot.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
-@EnableAsync(proxyTargetClass = true)
 public class JavaScriptExecutorService implements ScriptExecutionService {
 
+    private static final Pattern WRITE_CALL = Pattern.compile("\\.(create|update|delete)\\s*\\(");
 
     private final JdbcTemplate writeJdbcTemplate;
     private final JdbcTemplate readJdbcTemplate;
@@ -50,20 +51,28 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
             throw new SecurityException("Tenant ID is required but not provided");
         }
 
+        boolean mutating = isMutating(request.getScript());
+        JdbcTemplate readTemplate = mutating ? writeJdbcTemplate : readJdbcTemplate;
+
         log.info("Executing script for tenant: {}", tenantId);
         Context context = null;
         try{
-            context = contextPool.acquire();
+            context = contextPool.acquire();            
 
             // Создаем DatabaseAccessor для доступа к БД с изоляцией по tenant
             CqrsDatabaseAccessor dbAccessor = new CqrsDatabaseAccessor(
                     tenantId,
-                    readJdbcTemplate,
-                    writeJdbcTemplate,
+                    readTemplate, // read-путь: мастер при записи, иначе реплика
+                    writeJdbcTemplate, // write-путь: всегда мастер
                     meterRegistry
             );
             Value bindings = context.getBindings("js");
             bindings.putMember("DB", dbAccessor);
+            bindings.putMember("__toArr", new ToJSArray(context));
+
+            bindings.putMember("__procedureHelper", new ProcedureExecutorHelper(context, readTemplate, tenantId));
+            context.eval("js", "var executeProcedure = function(name) { return __procedureHelper.execute(name); }");
+
             if (request.getParams() != null) {
                 request.getParams().forEach(bindings::putMember);
             }
@@ -79,25 +88,6 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
                     .requestId(requestId)
                     .result(result)
                     .status(ExecutionResult.ExecutionStatus.SUCCESS)
-                    .executionTime(executionTime)
-                    .startTime(startTime)
-                    .endTime(endTime)
-                    .build();
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Instant endTime = Instant.now();
-            Long executionTime = Duration.between(startTime, endTime).toMillis();
-
-            log.error("SCRIPT_ERROR - RequestId: {} - {} - Script failed in {}ms at {}",
-                requestId,e.getMessage(), executionTime, endTime);
-
-            recordTimer(tenantId, ExecutionResult.ExecutionStatus.ERROR, startTime, endTime);
-
-            return ExecutionResult.builder()
-                    .requestId(requestId)
-                    .errorMessage(e.getMessage())
-                    .status(ExecutionResult.ExecutionStatus.ERROR)
                     .executionTime(executionTime)
                     .startTime(startTime)
                     .endTime(endTime)
@@ -153,25 +143,22 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
 
 
     @Override
-    public boolean validateScript(String script) {
+    public String validateScript(String script) {
         Context context = null;
         try {
             context = contextPool.acquire();
             context.parse("js", script);
-            return true;
+            return null;
         } catch (Exception e) {
             log.error("Script validation failed: {}", e.getMessage());
-            return false;
+            return e.getMessage();
         } finally {
             contextPool.release(context);
         }
     }
 
-    private String preview(Object obj, int max) {
-        if (obj == null) {
-            return null;
-        }
-        String str = String.valueOf(obj);
-        return str.length() > max ? str.substring(0, max) : str;
+    // true, если скрипт содержит операции записи -> читать тоже с мастера
+    private boolean isMutating(String script) {
+        return script != null && WRITE_CALL.matcher(script).find();
     }
 }

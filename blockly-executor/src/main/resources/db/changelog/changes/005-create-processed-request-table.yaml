@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-drop-and-recreate-processed-request
+      author: developer
+      valid: true
+      changes:
+        - sql:
+            sql: DROP TABLE IF EXISTS processed_request
+        - createTable:
+            tableName: processed_request
+            columns:
+              - column:
+                  name: request_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: 'IN_PROGRESS'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: response_json
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: processed_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false

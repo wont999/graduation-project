@@ -122,6 +122,23 @@ export const toolbox = {
                 { kind: 'block', type: 'action_execute' },
             ],
         },
+        {
+            kind: 'category',
+            name: 'Массивы данных',
+            colour: '#0078D7',
+            contents: [
+                { kind: 'block', type: 'array_length' },
+                { kind: 'block', type: 'array_get' },
+                { kind: 'block', type: 'array_forEach' },
+                { kind: 'block', type: 'array_filter' },
+                { kind: 'block', type: 'array_map' },
+                { kind: 'block', type: 'array_sum' },
+                { kind: 'block', type: 'create_object' },
+                { kind: 'block', type: 'export_csv' },
+                { kind: 'block', type: 'export_json' },
+                { kind: 'block', type: 'export_xml' },
+            ],
+        },
 
     ],
 }

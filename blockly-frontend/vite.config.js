@@ -10,6 +10,10 @@ export default defineConfig({
     },
     server: {
         proxy: {
+            '/api/executions': {
+                target: 'http://localhost:8180',
+                changeOrigin: true,
+            },
             '/api': {
                 target: 'http://localhost:8180/routing',
                 changeOrigin: true,

@@ -1,0 +1,53 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-create-products-table
+      author: developer
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              schemaName: tenant_appliner
+              tableName: products
+      changes:
+        - createTable:
+            schemaName: tenant_appliner
+            tableName: products
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1000)
+              - column:
+                  name: price
+                  type: NUMERIC(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category_id
+                  type: BIGINT
+              - column:
+                  name: stock
+                  type: INT
+                  defaultValueNumeric: 0
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+      rollback:
+        - dropTable:
+            schemaName: tenant_appliner
+            tableName: products

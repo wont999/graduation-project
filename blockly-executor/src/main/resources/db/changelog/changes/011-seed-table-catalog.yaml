@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-seed-table-catalog
+      author: developer
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: SELECT COUNT(*) FROM table_catalog
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO table_catalog (tenant_id, table_name, row_count, updated_at)
+              VALUES ('appliner', 'categories', (SELECT COUNT(*) FROM tenant_appliner.categories), now()),
+                     ('appliner', 'orders', (SELECT COUNT(*) FROM tenant_appliner.orders), now()),
+                     ('appliner', 'order_items', (SELECT COUNT(*) FROM tenant_appliner.order_items), now()),
+                     ('appliner', 'products', (SELECT COUNT(*) FROM tenant_appliner.products), now()),
+                     ('google', 'books', (SELECT COUNT(*) FROM tenant_google.books), now()),
+                     ('google', 'authors', (SELECT COUNT(*) FROM tenant_google.authors), now())

@@ -18,11 +18,18 @@ spring:
                 - Path=/routing/**
               filters:
                 - StripPrefix=1
+            - id: executor-executions
+              uri: lb://blockly-executor
+              predicates:
+                - Path=/api/executions/**
+              filters:
+                - StripPrefix=0
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ADDRESS:http://localhost:8080}/realms/${KEYCLOAK_REALM:master}
+          jwk-set-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:appliner}/protocol/openid-connect/certs
+          issuer-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:appliner}
 
 server:
   port: ${SERVER_PORT:8080}

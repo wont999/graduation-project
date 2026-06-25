@@ -1,19 +1,25 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { Rate, Trend } from 'k6/metrics';
+import { Rate, Trend, Counter } from 'k6/metrics';
 
 const errorRate = new Rate('errors');
 const latency = new Trend('request_latency');
+const readLatency = new Trend('read_latency');
+const writeLatency = new Trend('write_latency');
+const readCounter = new Counter('read_ops');
+const writeCounter = new Counter('write_ops');
+
+const VU = 200;
 
 export const options = {
+    setupTimeout: '120s',
     stages: [
-        { duration: '10s', target: 50 },
-        { duration: '60s', target: 200 },
-        { duration: '60s', target: 500 },
-        { duration: '20s', target: 0 },
+        { duration: '1m', target: VU },
+        { duration: '3m', target: VU },
+        { duration: '30s', target: 0 },
     ],
     thresholds: {
-        http_req_failed: ['rate<0.5'],
+        http_req_failed: ['rate<0.15'],
     },
 };
 
@@ -52,20 +58,19 @@ function executeScript(script, token) {
         console.log(`TIMEOUT vu=${__VU}`);
     } else if (!success) {
         errorRate.add(1);
-        console.log(`FAIL vu=${__VU} status=${res.status} body=${(res.body || '').substring(0, 200)}`);
     } else {
         errorRate.add(0);
         latency.add(duration);
     }
 
-    return bodyObj;
+    return { bodyObj, success, duration };
 }
 
 export function setup() {
     const res = http.post(KEYCLOAK_URL, {
         grant_type: 'password',
         client_id: 'gateway-client',
-        client_secret: 'sUTYSTdef4d9h8STvcbAJkbwtIClrLe7',
+        client_secret: 'kZwCo8x0OioQvjmkXD9aY8FtYgJ6Z5Zs',
         username: 'testuser',
         password: 'testpass',
     }, {
@@ -78,7 +83,7 @@ export function setup() {
     }
 
     const token = res.json('access_token');
-    console.log('Auth successful');
+    console.log('Auth successful, VU: ' + VU + ', scenario: 50/50 findAll + create/update, 10K rows');
     return { token };
 }
 
@@ -87,22 +92,29 @@ export default function (data) {
         return;
     }
 
-    // Batch create: order + 2 items in one script
-    const userId = __VU;
-    const batchScript = `
-        var order = DB.table('orders').create({user_id: 'vu-${userId}', total: 0, status: 'pending'});
-        var orderId = order.get('id');
-        var total = 0;
-        for (var i = 0; i < 2; i++) {
-            var price = Math.floor(Math.random() * 100) + 10;
-            DB.table('order_items').create({order_id: orderId, product_id: 1, quantity: 1, price: price});
-            total += price;
-        }
-        DB.table('orders').update(orderId, {total: total, status: 'completed'});
-        orderId
-    `;
+    const rand = Math.random();
 
-    executeScript(batchScript, data.token);
+    if (rand < 0.5) {
+        const result = executeScript(`DB.table('products').findAll()`, data.token);
+        if (result.success) {
+            readCounter.add(1);
+            readLatency.add(result.duration);
+        }
+    } else {
+        const price = Math.floor(Math.random() * 1000) + 1;
+        const writeRand = Math.random();
+        let result;
+        if (writeRand < 0.5) {
+            result = executeScript(`DB.table('products').create({name: 'vu-${__VU}-${__ITER}', price: ${price}})`, data.token);
+        } else {
+            const id = Math.floor(Math.random() * 10000) + 1;
+            result = executeScript(`DB.table('products').update(${id}, {price: ${price}})`, data.token);
+        }
+        if (result.success) {
+            writeCounter.add(1);
+            writeLatency.add(result.duration);
+        }
+    }
 
     sleep(0.1);
 }

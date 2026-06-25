@@ -30,12 +30,12 @@ onMounted(async () => {
 
   // Загрузка таблиц с бэкенда
   try {
-    const tables = await fetchTables('appliner')
+    const tables = await fetchTables()
     if (tables && tables.length > 0) {
       const tableData = {}
       for (const table of tables) {
-        const columns = await fetchTableColumns('appliner', table)
-        tableData[table] = columns
+        const columns = await fetchTableColumns(table.table_name)
+        tableData[table.table_name] = columns
       }
       const dataCategory = createTableCategories(tableData)
       const actionIdx = toolbox.contents.findIndex(c => c.name === 'Действия')

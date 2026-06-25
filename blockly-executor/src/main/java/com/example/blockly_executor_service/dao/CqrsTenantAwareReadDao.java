@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CqrsTenantAwareReadDao {
 
-    private static final Pattern VALID_IDENTIFIER = Pattern.compile("^[a-zA-Z0-9_-]+$");
     private static final Pattern VALID_COLUMN_NAME = Pattern.compile("^[a-zA-Z0-9_]+$");
 
     private final String tenantId;
@@ -65,22 +64,22 @@ public class CqrsTenantAwareReadDao {
     }
 
     @HostAccess.Export
-    public List<Map<String, Object>> findAll() {
+    public Object findAll() {
         return findAll(100);
     }
 
     @HostAccess.Export
-    public List<Map<String, Object>> findAll(int limit) {
+    public Object findAll(int limit) {
         return getTimer("findAll").record(() -> readJdbcTemplate.queryForList(findAllSql, limit));
     }
 
     @HostAccess.Export
-    public List<Map<String, Object>> findRecent(int count) {
+    public Object findRecent(int count) {
         return getTimer("findRecent").record(() -> readJdbcTemplate.queryForList(findRecentSql, count));
     }
 
     @HostAccess.Export
-    public List<Map<String, Object>> where(Map<String, Object> conditions) {
+    public Object where(Map<String, Object> conditions) {
         return getTimer("where").record(() -> {
             if (conditions == null || conditions.isEmpty()) {
                 return findAll();
@@ -258,7 +257,21 @@ public class CqrsTenantAwareReadDao {
     @HostAccess.Export
     public Object findOne(Map<String, Object> conditions) {
         return getTimer("findOne").record(() -> {
-            List<Map<String, Object>> results = where(conditions);
+            if (conditions == null || conditions.isEmpty()) {
+                List<Map<String, Object>> results = readJdbcTemplate.queryForList(findAllSql, 1);
+                return results.isEmpty() ? null : results.get(0);
+            }
+
+            StringBuilder sql = new StringBuilder(String.format(
+                    "SELECT * FROM %s WHERE 1=1",
+                    fullyQualifiedTableName
+            ));
+
+            List<Object> params = new ArrayList<>();
+            buildWhereClause(conditions, sql, params);
+            sql.append(" ORDER BY id LIMIT 1");
+
+            List<Map<String, Object>> results = readJdbcTemplate.queryForList(sql.toString(), params.toArray());
             return results.isEmpty() ? null : results.get(0);
         });
     }
@@ -271,8 +284,8 @@ public class CqrsTenantAwareReadDao {
     }
 
 
-    @HostAccess.Export
-    public List<Map<String, Object>> executeRawQuery(String sql, Object... params) {
+
+    public Object executeRawQuery(String sql, Object... params) {
         log.debug("Executing READ query: {} (tenant: {})", sql, tenantId);
         if (!sql.trim().toUpperCase().startsWith("SELECT")) {
             throw new SecurityException("Only SELECT queries are allowed");

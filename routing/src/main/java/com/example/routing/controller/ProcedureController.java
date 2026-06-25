@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static org.springframework.http.HttpStatus.OK;
@@ -64,5 +66,21 @@ public class ProcedureController {
                                     .errorMessage(ex.getMessage())
                                     .build());
                 });
+    }
+
+    @PostMapping("/submit")
+    public ResponseEntity<?> submit(
+            @RequestBody ProcedureRequestDto<?> request,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Organization-Id", required = false) String organizationId) {
+
+        if (userId == null || userId.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "User authentication required"));
+        }
+        UUID requestId = gatewayService.submitProcedure(request, userId, organizationId);
+        return ResponseEntity.accepted().body(Map.of(
+                "requestId", requestId.toString(),
+                "status", "IN_PROGRESS"));
     }
 }

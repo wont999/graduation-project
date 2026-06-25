@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-seed-appliner-data
+      author: developer
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: SELECT COUNT(*) FROM tenant_appliner.categories
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO tenant_appliner.categories (name, description)
+              VALUES ('Электроника', 'Гаджеты и устройства'),
+                     ('Одежда', 'Одежда и аксессуары'),
+                     ('Книги', 'Печатные издания')
+        - sql:
+            sql: |
+              INSERT INTO tenant_appliner.products (name, description, price, category_id, stock)
+              VALUES ('Смартфон X1', 'Мощный смартфон с 6-дюймовым экраном', 59999.99, 1, 50),
+                     ('Ноутбук Pro', 'Для работы и игр', 89999.99, 1, 30),
+                     ('Футболка хлопковая', 'Белая футболка из натурального хлопка', 999.99, 2, 200),
+                     ('Джинсы классические', 'Синие джинсы прямого кроя', 2999.99, 2, 100),
+                     ('Java. Полное руководство', 'Книга по Java программированию', 2499.99, 3, 20)
+        - sql:
+            sql: |
+              INSERT INTO tenant_appliner.orders (user_id, total, status)
+              VALUES ('user_1', 60999.98, 'completed'),
+                     ('user_1', 999.99, 'pending'),
+                     ('user_2', 89999.99, 'shipped')
+        - sql:
+            sql: |
+              INSERT INTO tenant_appliner.order_items (order_id, product_id, quantity, price)
+              VALUES (1, 1, 1, 59999.99),
+                     (1, 5, 1, 1000.00),
+                     (2, 3, 1, 999.99),
+                     (3, 2, 1, 89999.99)

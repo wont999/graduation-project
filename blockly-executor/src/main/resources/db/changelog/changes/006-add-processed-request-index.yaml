@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-add-processed-request-index
+      author: developer
+      changes:
+        - createIndex:
+            indexName: idx_processed_request_status_processed_at
+            tableName: processed_request
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: processed_at

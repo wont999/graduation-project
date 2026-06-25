@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-saved-procedures
+      author: developer
+      changes:
+        - createTable:
+            tableName: saved_procedures
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: blockly_xml
+                  type: TEXT
+              - column:
+                  name: generated_js
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+
+        - addUniqueConstraint:
+            tableName: saved_procedures
+            columnNames: tenant_id, name
+            constraintName: uk_saved_procedures_tenant_name
+
+        - createIndex:
+            tableName: saved_procedures
+            indexName: idx_saved_procedures_tenant
+            columns:
+              - column:
+                  name: tenant_id
+
+      rollback:
+        - dropTable:
+            tableName: saved_procedures

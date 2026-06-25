@@ -6,5 +6,6 @@ import lombok.Builder;
 public record ProcedureRequestDto<T>(
         String clientType,
         T parameters,
-        String procedureName
+        String procedureName,
+        String replyTo
 ) {}

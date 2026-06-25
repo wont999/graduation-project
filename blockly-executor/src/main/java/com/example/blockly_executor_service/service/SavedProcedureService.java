@@ -1,5 +1,6 @@
 package com.example.blockly_executor_service.service;
 
+import com.example.blockly_executor_service.service.execution.ScriptExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,16 +21,17 @@ public class SavedProcedureService {
 
     @Qualifier("readJdbcTemplate")
     private final JdbcTemplate readJdbcTemplate;
+    private final ScriptExecutionService scriptExecutionService;
 
     private final RowMapper<Map<String, Object>> rowMapper = (rs, rowNum) -> Map.of(
             "id", rs.getLong("id"),
             "tenantId", rs.getString("tenant_id"),
             "name", rs.getString("name"),
             "description", rs.getString("description"),
-            "blocklyXml", rs.getString("blockly_xml"),
-            "generatedJs", rs.getString("generated_js"),
+            "blocklyXml", rs.getString("blockly_xml") != null ? rs.getString("blockly_xml") : "",
+            "generatedJs", rs.getString("generated_js") != null ? rs.getString("generated_js") : "",
             "createdAt", rs.getTimestamp("created_at").toLocalDateTime().toString(),
-            "updatedAt", rs.getTimestamp("updated_at").toLocalDateTime().toString()
+            "updatedAt", rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime().toString() : ""
     );
 
     public List<Map<String, Object>> listByTenant(String tenantId) {
@@ -49,6 +51,11 @@ public class SavedProcedureService {
 
     public Map<String, Object> save(String tenantId, String name, String description,
                                     String blocklyXml, String generatedJs) {
+        String error = scriptExecutionService.validateScript(generatedJs);
+        if (error != null) {
+            throw new IllegalArgumentException(
+                    "Invalid JS: " + error + " (procedure: " + name + ")");
+        }
         writeJdbcTemplate.update(
                 "INSERT INTO saved_procedures (tenant_id, name, description, blockly_xml, generated_js) " +
                         "VALUES (?, ?, ?, ?, ?) " +
