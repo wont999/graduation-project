@@ -6,7 +6,7 @@
 1. Собрать проект:
   .\gradlew clean bootJar -x test
 2. Запустить сервисы:
-  docker-compose up -d –build
+  docker-compose up -d --build
 3. Дождаться запуска всех контейнеров (примерно 2–3 минуты).
 
 Запуск клиентской части:
